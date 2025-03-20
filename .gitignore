@@ -1,0 +1,11 @@
+*.log
+*.zip
+*.bak
+.vscode/
+*.ps1xml
+*.pssc
+*.psm1
+*.psd1
+
+# Ignore test result output
+Tests/*.xml

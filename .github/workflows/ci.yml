@@ -1,0 +1,57 @@
+name: PowerShell Module CI
+
+on:
+  push:
+    branches:
+      - main  # Change if needed
+    tags:
+      - 'v*'  # Triggers on versioned tags like v1.0.0
+  pull_request:
+    branches:
+      - main  # Change if needed
+
+jobs:
+  test:
+    name: Run Pester Tests
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install PowerShell 7
+        uses: ioxu/actions-setup-powershell@v1
+        with:
+          powershell-version: '7.x'
+
+      - name: Run Pester Tests
+        shell: pwsh
+        run: |
+          Install-Module -Name Pester -Force -SkipPublisherCheck -Scope CurrentUser
+          Invoke-Pester -Path .\tests -Output Detailed
+
+  package:
+    name: Package PowerShell Module
+    runs-on: windows-latest
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/v')  # Only runs when a version tag is pushed
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Package Module
+        shell: pwsh
+        run: |
+          $ModulePath = "$env:GITHUB_WORKSPACE\GameLibAutoArchiver"
+          $Manifest = "$ModulePath\GameLibAutoArchiver.psd1"
+          Compress-Archive -Path $ModulePath\* -DestinationPath "$ModulePath.zip"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GameLibAutoArchiver
+          path: GameLibAutoArchiver.zip
+
+  # Publishing job is NOT automated to avoid accidental releases
+  # You will manually publish using Publish-Module when ready
