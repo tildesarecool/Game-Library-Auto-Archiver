@@ -24,7 +24,13 @@ cd GameLibAutoArchiver
 ```
 
 ## Usage
-Coming soon
+
+It's not actually ready to use yet. Don't use it. This is jsut an example.
+
+Import-Module ./GameLibAutoArchiver/GameLibAutoArchiver.psd1
+Start-GameLibraryArchive -LibraryPath "C:\Games"
+
+Where that c:\games is a path to your game library.
 
 ## Contributing
 
