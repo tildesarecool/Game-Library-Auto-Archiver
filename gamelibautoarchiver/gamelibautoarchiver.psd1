@@ -10,13 +10,13 @@
     PowerShellVersion = '7.0'
 
     # Author of this module
-    Author           = 'Your Name'
+    Author           = 'Tildesare cool'
 
     # Company or vendor of this module
-    CompanyName      = 'YourName or GitHub Username'
+    CompanyName      = 'tildesarecool'
 
     # Copyright statement for this module
-    Copyright        = '(c) 2024 Your Name. All rights reserved.'
+    Copyright        = '(c) 2024 tildesarecool. All rights reserved.'
 
     # Description of the functionality provided by this module
     Description      = 'A PowerShell module for automatically archiving PC game libraries using last write date and platform detection.'
@@ -40,10 +40,10 @@
             Tags         = @('Game', 'Library', 'Archiver', 'Backup', 'Automation', 'Zip', 'Compression')
 
             # Project URL (GitHub repo)
-            ProjectUri   = 'https://github.com/yourusername/GameLibAutoArchiver'
+            ProjectUri   = 'https://github.com/tildesarecool/Game-Library-Auto-Archiver'
 
             # License URL
-            LicenseUri   = 'https://github.com/yourusername/GameLibAutoArchiver/blob/main/LICENSE'
+            LicenseUri   = 'https://github.com/tildesarecool/Game-Library-Auto-Archiver/blob/main/LICENSE'
 
             # Release notes
             ReleaseNotes = 'Initial version 0.0.1'
