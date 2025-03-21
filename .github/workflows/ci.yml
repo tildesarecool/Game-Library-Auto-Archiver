@@ -14,15 +14,14 @@ jobs:
   test:
     name: Run Pester Tests
     runs-on: windows-latest
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install PowerShell 7
-        uses: ioxu/actions-setup-powershell@v1
+      - name: Setup PowerShell 7
+        uses: powershell/setup-powershell@v1
         with:
-          powershell-version: '7.x'
+          powershell-version: '7.5'
 
       - name: Run Pester Tests
         shell: pwsh
