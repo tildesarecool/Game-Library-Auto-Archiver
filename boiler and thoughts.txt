@@ -1,0 +1,121 @@
+
+
+
+Re-run Tests: Reset to RTTSR, then re-run Tests 1, 2, 3, 5, 8, and 9
+
+
+
+what if anything to do about interupted jobs/partial zips
+
+
+
+validate running on PS 7.x before continuing to script
+or just do a bool with if [-2] to see if current version of PS will support it?
+either way something to do up front
+
+
+
+some way to validate zip file names
+in case there's both
+ Horizon_Chase_12152024_steam.zip
+and
+Horizon_Chase_12152024_steam - Copy.zip
+or some such nonsense
+
+also some kind of 'trim' applied to make sure there's no spaces before or after the file name
+
+timer of zip operations (Measure-Command)
+
+ideas: with or without -what-if use a -create-answerfile
+then to use answer file use -answerfile:file.txt
+
+also default to displaying the operations that are going to happen with a "press any key to continue" pause
+and use a -noPrompt to not pause to press a key
+
+also a way to limit max size of folders. like back up only folders less than 20 gigs or 50 gigs
+
+random idea: when compress-archive finishes and return a "success" 0 or whatever, do a md5/whatever hash on it and keep that
+well it was supposed to be for catching zips that are only part way created but a patched folder would produce a zip with a different 
+hash anyway so not that great of an idea
+
+
+also feed in a bare list of folder names only back up that list?
+i mean the out put of dir /b
+or the ps equivalent
+
+this text file with one folder per line for selective compression could then be utlized in a hypothetical selective decompression companion script
+
+
+16:35 3/13/2025
+
+notes: running with empty string for answer file:
+ pwsh -command '& { .\steamzipper.ps1 -sourceFolder "P:\steamzipper\steam temp storage" -destinationFolder "P:\steamzipper\zip test output" -createAnswerFile ""  }'
+script just runs normally, to extra information for the user
+
+running with no file and no file name or quotes at all
+pwsh -command '& { .\steamzipper.ps1 -sourceFolder "P:\steamzipper\steam temp storage" -destinationFolder "P:\steamzipper\zip test output" -createAnswerFile   }'
+
+is maybe hard to follow error
+steamzipper.ps1: Missing an argument for parameter 'createAnswerFile'. Specify a parameter of type 'System.String' and try again.
+but quits immeidately
+
+grok suggested a default json file (answer.json?) when no is specified. may have to come back to that
+
+
+
+
+13:40 3/14/2025
+i think the -createnswerfile is actually broken. i'm not sure it really takes the parameters used and puts them into a
+anserfile txt file, i think it defaults to a set of parameters. It's fine. 
+
+
+
+
+
+running with line:
+pwsh -command '& { .\steamzipper.ps1 "P:\steamzipper\steam temp storage" "P:\steamzipper\zip test output" -debugMode -VerbMode -keepDuplicates -CompressionLevel Fastest }'
+
+pretest:
+
+Pretest: Ready-to-Test State Restored
+
+
+
+test result:
+
+contents of deleted:
+
+
+contents of destination:
+
+
+
+
+transcript file:
+
+
+Remove-Item -Path "P:\steamzipper\zip test output\bit_Dungeon_11012024_steam.zip" -Force
+Remove-Item -Path "P:\steamzipper\zip test output\bit_Dungeon_II_11012024_steam.zip" -Force
+Remove-Item -Path "P:\steamzipper\zip test output\bit_Dungeon_III_11012024_steam.zip" -Force
+Remove-Item -Path "P:\steamzipper\zip test output\Dig_Dog_11092024_steam.zip" -Force
+Remove-Item -Path "P:\steamzipper\zip test output\Horizon_Chase_01012025_steam.zip" -Force
+Remove-Item -Path "P:\steamzipper\zip test output\Ms._PAC-MAN_11012024_steam.zip" -Force
+Remove-Item -Path "P:\steamzipper\zip test output\Outzone_11012024_steam.zip" -Force
+Remove-Item -Path "P:\steamzipper\zip test output\PAC-MAN_02062025_steam.zip" -Force
+Move-Item -Path "P:\steamzipper\zip test output\deleted\*" -Destination "P:\steamzipper\zip test output\" -Force
+
+
+
+Get-ChildItem -Path "P:\steamzipper\steam temp storage" | Select-Object Name, LastWriteTime 
+
+Get-ChildItem -Path "P:\Game-Library-Auto-Archiver\GameDest" | Select-Object Name
+
+Get-ChildItem -Path "P:\steamzipper\zip test output\deleted\" | Select-Object Name >> .\source-dest-content-reset.txt
+
+
+
+i did RTTSR and updated script file
+
+ran test
+pwsh -Command "Measure-Command { .\steamzipper.ps1 -sourceFolder 'P:\steamzipper\steam temp storage' -destinationFolder 'P:\steamzipper\zip test output' -VerbMode -Parallel -MaxJobs 12 } | Format-Table TotalSeconds"
+
