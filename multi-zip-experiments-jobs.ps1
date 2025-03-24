@@ -27,8 +27,28 @@
 # as reported by the environment variable defined by the OS:
 $global:maxJobsDefine = [System.Environment]::ProcessorCount
 $ThrottleLimit = $null
-$libpath = "P:\Game-Library-Auto-Archiver\GameSource"
-$zipDestpath = "P:\Game-Library-Auto-Archiver\GameDest"
+
+
+if (Test-Path "P:\Game-Library-Auto-Archiver\GameSource" ) {
+    $libpath = "P:\Game-Library-Auto-Archiver\GameSource"
+} elseif (Test-Path "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource") {
+    $libpath = "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource"
+} else {
+    Write-Host "Didn't find either path"
+    exit 1
+}
+
+if (Test-Path "P:\Game-Library-Auto-Archiver\GameDest" ) {
+    $zipDestpath = "P:\Game-Library-Auto-Archiver\GameDest"
+} elseif (Test-Path "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameDest") {
+    $libpath = "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameDest"
+} else {
+    Write-Host "Didn't find either path"
+    exit 1
+}
+# "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource"
+# 
+# $zipDestpath = "P:\Game-Library-Auto-Archiver\GameDest"
 # next i'm going to do a little if/else and math against that number to establish
 # a throttle limit:
 

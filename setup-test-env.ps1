@@ -13,13 +13,28 @@
 # setup-test-env.ps1
 # Reset test environment by copying reference folders and setting LastWriteTime
 
+# DIRECTORIES FOR ALIENWARE
 # Reference directories (unchanging sources)
-$sourceRefDir = "P:\Game-Library-Auto-Archiver\test env - dest game folders ref"  # ZIPs
-$destRefDir = "P:\Game-Library-Auto-Archiver\test env - source large game folders ref"  # Game folders
+# $sourceRefDir = "P:\Game-Library-Auto-Archiver\test env - dest game folders ref"  # ZIPs
+# $destRefDir = "P:\Game-Library-Auto-Archiver\test env - source large game folders ref"  # Game folders
+# 
+# # Test directories (reset each run)
+# $testSourceDir = "P:\Game-Library-Auto-Archiver\GameSource"
+# $testDestDir = "P:\Game-Library-Auto-Archiver\GameDest"
+
+# DIRECTORIES FOR THINKPAD
+$sourceRefDir = "C:\Users\keith\Documents\Game-Library-Auto-Archiver\test env - source large game folders ref"  # ZIPs
+$destRefDir =   "C:\Users\keith\Documents\Game-Library-Auto-Archiver\test env - dest game folders ref"  # Game folders
 
 # Test directories (reset each run)
-$testSourceDir = "P:\Game-Library-Auto-Archiver\GameSource"
-$testDestDir = "P:\Game-Library-Auto-Archiver\GameDest"
+$testSourceDir = "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource"
+$testDestDir =   "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameDest"
+
+# if (Test-Path "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameDest") {
+#     $systempc =  "thinkpad"
+# } elseif (Test-Path "P:\Game-Library-Auto-Archiver\GameDest") {
+#     $systempc = "alienware"
+# }
 
 # Date variables for LastWriteTime
 $dates = @(
@@ -44,8 +59,8 @@ if (-not ((Test-Path $sourceRefDir) -and (Test-Path $destRefDir))) {
     Write-Error "Reference path missing: $sourceRefDir or $destRefDir"
     exit 1
 }
-Copy-Item -Path "$destRefDir\*" -Destination $testSourceDir -Recurse -Force
-Copy-Item -Path "$sourceRefDir\*" -Destination $testDestDir -Recurse -Force
+Copy-Item -Path "$destRefDir\*" -Destination $testDestDir -Recurse -Force
+Copy-Item -Path "$sourceRefDir\*" -Destination  $testSourceDir -Recurse -Force
 Start-Sleep -Seconds 1  # Brief wait for NVMe sync
 Write-Host "Copied from reference to $testSourceDir and $testDestDir"
 
