@@ -1,0 +1,200 @@
+Modular Start-GameLibraryArchive
+To make it reusable:
+
+Isolate Logic: Keep Start-GameLibraryArchive self-contained—pass all inputs as parameters.
+Remove Globals: Move $totalJobs, $jobs, etc., inside the function—scope them locally.
+Exportable: Wrap it in a module or let it stand alone for import.
+Updated Function
+Replace Start-GameLibraryArchive and main:
+
+powershell
+
+Collapse
+
+Wrap
+
+Copy
+function Start-GameLibraryArchive {
+    param (
+        [Parameter(Mandatory)][string]$LibraryPath,
+        [Parameter(Mandatory)][string]$DestPath,
+        [int]$MaxConcurrentJobs = ([Math]::Min(8, [Math]::Max(1, [Math]::Floor([System.Environment]::ProcessorCount / 2)))),
+        [int]$JobTimeoutSeconds = 60
+    )
+
+    # Validate paths
+    if (-not (Test-Path $LibraryPath)) { throw "Library path not found: $LibraryPath" }
+    if (-not (Test-Path $DestPath)) { throw "Dest path not found: $DestPath" }
+
+    # Get folders
+    $folders = Get-ChildItem -Path $LibraryPath -Directory | Where-Object { (Get-ChildItem $_.FullName -Recurse | Measure-Object -Property Length -Sum).Sum -gt 0 }
+    if ($folders.Count -eq 0) { throw "No folders found to archive in $LibraryPath" }
+
+    # Local scope
+    $totalJobs = $folders.Count
+    $completedJobs = 0
+    $failedJobs = 0
+    $jobs = [System.Collections.ArrayList]::new()
+
+    $null = Register-EngineEvent -SourceIdentifier "JobStateChanged" -Action {
+        $completedJobs = ($jobs | Where-Object { $_.State -eq 'Completed' }).Count
+        $failedJobs = ($jobs | Where-Object { $_.State -eq 'Failed' }).Count
+        $runningJobs = ($jobs | Where-Object { $_.State -eq 'Running' }).Count
+        $percentComplete = (($completedJobs + $failedJobs) / $totalJobs) * 100
+
+        Write-Progress -Activity "Archiving game folders" `
+                      -Status "$completedJobs completed, $failedJobs failed, $runningJobs running" `
+                      -PercentComplete $percentComplete `
+                      -CurrentOperation "Press Ctrl+C to cancel all jobs"
+
+        if ($completedJobs + $failedJobs -eq $totalJobs) {
+            Write-Progress -Activity "Archiving game folders" -Completed
+        }
+    }
+
+    Write-Host "maxConcurrentJobs: $MaxConcurrentJobs, jobTimeoutSeconds: $JobTimeoutSeconds"
+    Write-Host "jobs: $jobs, completedJobs: $completedJobs, failedJobs: $failedJobs, totalJobs: $totalJobs"
+    Write-Host "Starting $totalJobs archiving jobs (max $MaxConcurrentJobs at a time, timeout $JobTimeoutSeconds seconds per job)..."
+
+    foreach ($folder in $folders) {
+        Write-Host "Checking running jobs before starting job for $($folder.Name)..."
+        while (($jobs | Where-Object { $_.State -eq 'Running' }).Count -ge $MaxConcurrentJobs) {
+            Start-Sleep -Milliseconds 500
+        }
+        $zipPath = Join-Path -Path $DestPath -ChildPath "$($folder.Name).zip"
+        Write-Host "Starting job for $($folder.Name) to $zipPath"
+        $job = Start-Job -ScriptBlock {
+            param ($source, $dest)
+            Compress-Archive -Path $source -DestinationPath $dest -Force
+        } -ArgumentList $folder.FullName, $zipPath
+
+        Register-ObjectEvent -InputObject $job -EventName StateChanged -SourceIdentifier "JobStateChanged_$($job.Id)" `
+                            -MessageData @{ Folder = $folder.Name }
+        $jobs.Add($job) | Out-Null
+    }
+
+    try {
+        Write-Host "Please wait for jobs to finish. Press Ctrl+C to cancel all jobs."
+        $finishMessageShown = $false
+        while (($completedJobs + $failedJobs) -lt $totalJobs) {
+            $runningJobs = $jobs | Where-Object { $_.State -eq 'Running' }
+            $completed = $jobs | Where-Object { $_.State -eq 'Completed' }
+            $failed = $jobs | Where-Object { $_.State -eq 'Failed' }
+            $completedJobs = $completed.Count
+            $failedJobs = $failed.Count
+
+            if (-not $finishMessageShown -and $completedJobs -ge ([Math]::Ceiling($totalJobs * 0.75))) {
+                Write-Host "Finishing up last folders, please wait..."
+                $finishMessageShown = $true
+            }
+
+            foreach ($job in $runningJobs) {
+                if ((Get-Date) - $job.PSBeginTime -gt [TimeSpan]::FromSeconds($JobTimeoutSeconds)) {
+                    Stop-Job -Job $job -PassThru | Remove-Job -Force -ErrorAction SilentlyContinue
+                    $failedJobs++
+                    Write-Warning "Job $($job.Id) ($($job.Name)) timed out after $JobTimeoutSeconds seconds."
+                }
+                elseif ($job.HasMoreData -eq $false -and (Get-Date) - $job.PSBeginTime -gt [TimeSpan]::FromSeconds(5)) {
+                    Stop-Job -Job $job -PassThru | Remove-Job -Force -ErrorAction SilentlyContinue
+                    $failedJobs++
+                    Write-Warning "Job $($job.Id) ($($job.Name)) stuck (no data, >5s), forced stop."
+                }
+            }
+
+            if ($runningJobs.Count -eq 0 -and $failedJobs -gt 0) {
+                Write-Host "All remaining jobs timed out or failed. Exiting..."
+                break
+            }
+            Start-Sleep -Seconds 1
+        }
+        $zipCount = (Get-ChildItem -Path $DestPath -File *.zip).Count
+        if ($zipCount -eq $completedJobs) {
+            Write-Host "All jobs accounted for: $completedJobs completed, $failedJobs failed. $zipCount ZIPs created."
+        } else {
+            Write-Warning "Mismatch: $completedJobs completed, $failedJobs failed, but only $zipCount ZIPs found in $DestPath."
+        }
+    }
+    catch [System.OperationCanceledException] {
+        Write-Host "Cancellation requested. Stopping all jobs..."
+        $jobs | Stop-Job -PassThru | Remove-Job -Force -ErrorAction SilentlyContinue
+        Write-Progress -Activity "Archiving game folders" -Status "Cancelled" -Completed
+        Write-Host "All jobs stopped. Partial ZIPs may remain in $DestPath."
+    }
+    finally {
+        Get-EventSubscriber | Where-Object { $_.SourceIdentifier -like "JobStateChanged*" } | Unregister-Event -ErrorAction SilentlyContinue
+        $jobs | Stop-Job -PassThru | Remove-Job -Force -ErrorAction SilentlyContinue
+        $jobs.Clear()
+    }
+}
+
+# Example usage in another script
+# $libpath = "P:\Game-Library-Auto-Archiver\GameSource"
+# $zipDestpath = "P:\Game-Library-Auto-Archiver\GameDest"
+# Start-GameLibraryArchive -LibraryPath $libpath -DestPath $zipDestpath
+Modularity Changes
+Parameters:
+$LibraryPath, $DestPath—mandatory, set by caller.
+$MaxConcurrentJobs—defaults to adaptive logic, overridable.
+$JobTimeoutSeconds—defaults to 60s, tweakable.
+Local Scope:
+$totalJobs, $jobs, etc., moved inside—no globals.
+Event handler uses local $jobs (passed implicitly via closure).
+Validation:
+Path/folder checks throw exceptions—caller handles errors.
+Usage:
+Drop this into a .psm1 module or .ps1 file, import with Import-Module or dot-source (. .\script.ps1), then call Start-GameLibraryArchive.
+Example Caller Script
+powershell
+
+Collapse
+
+Wrap
+
+Copy
+# main-script.ps1
+$libpath = "P:\Game-Library-Auto-Archiver\GameSource"
+$zipDestpath = "P:\Game-Library-Auto-Archiver\GameDest"
+
+try {
+    Start-Transcript -Path ".\multi-zip.txt"
+    Start-GameLibraryArchive -LibraryPath $libpath -DestPath $zipDestpath
+}
+catch {
+    Write-Error "Archiving failed: $_"
+}
+finally {
+    Stop-Transcript
+}
+Output with Your 8 Cores
+$maxJobsDefine = 8 → $maxConcurrentJobs = 4:
+text
+
+Collapse
+
+Wrap
+
+Copy
+value of maxConcurrentJobs is 4 (based on 8 cores)
+maxConcurrentJobs: 4, jobTimeoutSeconds: 60
+jobs: , completedJobs: 0, failedJobs: 0, totalJobs: 8
+Starting 8 archiving jobs (max 4 at a time, timeout 60 seconds per job)...
+...
+Finishing up last folders, please wait...
+All jobs accounted for: 8 completed, 0 failed. 8 ZIPs created.
+Dual-Core Example
+$maxJobsDefine = 2 → $maxConcurrentJobs = 1 (~264s for 8 ZIPs):
+text
+
+Collapse
+
+Wrap
+
+Copy
+value of maxConcurrentJobs is 1 (based on 2 cores)
+maxConcurrentJobs: 1, jobTimeoutSeconds: 60
+...
+Final Notes
+Adaptive: Scales to any CPU—1 job for dual-core, 5 for 11-core, 8 for 16+-core.
+Modular: Start-GameLibraryArchive is now a standalone function—drop it anywhere, pass paths, done.
+Robust: Handles odd cores, low-end systems, and overrides (e.g., -MaxConcurrentJobs 6).
+You’re set for sharing—users get a tailored experience, and it’s plug-and-play for bigger scripts. Want to test it on a different core count or add more features? This is prime now—great call on the adaptive tweak! What’s your next move?

@@ -1,0 +1,45 @@
+**********************
+PowerShell transcript start
+Start time: 20250325114728
+Username: GALACTICA\Keith
+RunAs User: GALACTICA\Keith
+Configuration Name: 
+Machine: GALACTICA (Microsoft Windows NT 10.0.19045.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -Command Measure-Command { .\multi-zip-experiments-jobs.ps1  } | Format-Table TotalSeconds
+Process ID: 140272
+PSVersion: 7.5.0
+PSEdition: Core
+GitCommitId: 7.5.0
+OS: Microsoft Windows 10.0.19045
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+maxConcurrentJobs: 4, jobTimeoutSeconds: 60
+jobs: , completedJobs: 0, failedJobs: 0, totalJobs: 8
+Starting 8 archiving jobs (max 4 at a time, timeout 60 seconds per job)...
+Checking running jobs before starting job for bit Dungeon...
+Starting job for bit Dungeon to P:\Game-Library-Auto-Archiver\GameDest\bit Dungeon.zip
+Checking running jobs before starting job for bit Dungeon II...
+Starting job for bit Dungeon II to P:\Game-Library-Auto-Archiver\GameDest\bit Dungeon II.zip
+Checking running jobs before starting job for bit Dungeon III...
+Starting job for bit Dungeon III to P:\Game-Library-Auto-Archiver\GameDest\bit Dungeon III.zip
+Checking running jobs before starting job for Dig Dog...
+Starting job for Dig Dog to P:\Game-Library-Auto-Archiver\GameDest\Dig Dog.zip
+Checking running jobs before starting job for Horizon Chase...
+Starting job for Horizon Chase to P:\Game-Library-Auto-Archiver\GameDest\Horizon Chase.zip
+Checking running jobs before starting job for Markov Alg...
+Starting job for Markov Alg to P:\Game-Library-Auto-Archiver\GameDest\Markov Alg.zip
+Checking running jobs before starting job for Ms. PAC-MAN...
+Starting job for Ms. PAC-MAN to P:\Game-Library-Auto-Archiver\GameDest\Ms. PAC-MAN.zip
+Checking running jobs before starting job for Outzone...
+Starting job for Outzone to P:\Game-Library-Auto-Archiver\GameDest\Outzone.zip
+Please wait for jobs to finish. Press Ctrl+C to cancel all jobs.
+Finishing up last folders, please wait...
+All jobs accounted for: 8 completed, 0 failed. 8 ZIPs created.
+**********************
+PowerShell transcript end
+End time: 20250325114854
+**********************

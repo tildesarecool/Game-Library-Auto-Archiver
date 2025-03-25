@@ -15,20 +15,20 @@
 
 # DIRECTORIES FOR ALIENWARE
 # Reference directories (unchanging sources)
-# $sourceRefDir = "P:\Game-Library-Auto-Archiver\test env - dest game folders ref"  # ZIPs
-# $destRefDir = "P:\Game-Library-Auto-Archiver\test env - source large game folders ref"  # Game folders
-# 
-# # Test directories (reset each run)
-# $testSourceDir = "P:\Game-Library-Auto-Archiver\GameSource"
-# $testDestDir = "P:\Game-Library-Auto-Archiver\GameDest"
-
-# DIRECTORIES FOR THINKPAD
-$sourceRefDir = "C:\Users\keith\Documents\Game-Library-Auto-Archiver\test env - source large game folders ref"  # ZIPs
-$destRefDir =   "C:\Users\keith\Documents\Game-Library-Auto-Archiver\test env - dest game folders ref"  # Game folders
+$sourceRefDir = "P:\Game-Library-Auto-Archiver\test env - source large game folders ref"  # ZIPs
+$destRefDir = "P:\Game-Library-Auto-Archiver\test env - dest game folders ref"  # Game folders
 
 # Test directories (reset each run)
-$testSourceDir = "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource"
-$testDestDir =   "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameDest"
+$testSourceDir = "P:\Game-Library-Auto-Archiver\GameSource"
+$testDestDir = "P:\Game-Library-Auto-Archiver\GameDest"
+
+# DIRECTORIES FOR THINKPAD
+# $sourceRefDir = "C:\Users\keith\Documents\Game-Library-Auto-Archiver\test env - source large game folders ref"  # ZIPs
+# $destRefDir =   "C:\Users\keith\Documents\Game-Library-Auto-Archiver\test env - dest game folders ref"  # Game folders
+# 
+# # Test directories (reset each run)
+# $testSourceDir = "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource"
+# $testDestDir =   "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameDest"
 
 # if (Test-Path "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameDest") {
 #     $systempc =  "thinkpad"
