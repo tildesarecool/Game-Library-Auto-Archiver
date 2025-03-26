@@ -4,38 +4,54 @@
 # and the actual folders the script runs against
 # so i'm not sure if i need that list of game folders or not because i'm copying them
 #
+# setup-test-env.ps1
+# Reset test environment by copying reference folders and setting LastWriteTime
 
 # these are the do-not-touch folder/zip file sources from which a test env 
-# is established
-# setup-test-env.ps1
-# Reset test environment by copying reference folders and setting LastWriteTime
+if (Test-Path "C:\Users\keith\Documents\Game-Library-Auto-Archiver\test env - source large game folders ref") {
+    $sourceRefDir = "C:\Users\keith\Documents\Game-Library-Auto-Archiver\test env - source large game folders ref"
+    Write-Host "Game source set to P drive path"
+} elseif (Test-Path "P:\Game-Library-Auto-Archiver\test env - source large game folders ref") {
+    $sourceRefDir = "P:\Game-Library-Auto-Archiver\test env - source large game folders ref"
+    Write-Host "Game source set to C drive path"
+} else {
+    Write-Host "Didn't find either path (source)"
+    exit 1
+}
 
-# setup-test-env.ps1
-# Reset test environment by copying reference folders and setting LastWriteTime
+if (Test-Path "C:\Users\keith\Documents\Game-Library-Auto-Archiver\test env - dest game folders ref") {  # Game folders") {
+    $destRefDir = "C:\Users\keith\Documents\Game-Library-Auto-Archiver\test env - dest game folders ref"  # Game folders"
+    Write-Host "Game dest set to P drive path"
+} elseif (Test-Path "P:\Game-Library-Auto-Archiver\test env - dest game folders ref") {
+    $destRefDir = "P:\Game-Library-Auto-Archiver\test env - dest game folders ref"
+    Write-Host "Game dest set to C drive path"
+} else {
+    Write-Host "Didn't find either path (dest)"
+    exit 1
+}
 
-# DIRECTORIES FOR ALIENWARE
-# Reference directories (unchanging sources)
-$sourceRefDir = "P:\Game-Library-Auto-Archiver\test env - source large game folders ref"  # ZIPs
-$destRefDir = "P:\Game-Library-Auto-Archiver\test env - dest game folders ref"  # Game folders
+# actual test directories
+if (Test-Path "P:\Game-Library-Auto-Archiver\GameSource") {
+    $testSourceDir = "P:\Game-Library-Auto-Archiver\GameSource"
+    Write-Host "Game source set to P drive path"
+} elseif (Test-Path "C:\Users\Keith\Documents\Game-Library-Auto-Archiver\GameSource") {
+    $testSourceDir = "C:\Users\Keith\Documents\Game-Library-Auto-Archiver\GameSource"
+    Write-Host "Game source set to C drive path"
+} else {
+    Write-Host "Didn't find either path (source)"
+    exit 1
+}
 
-# Test directories (reset each run)
-$testSourceDir = "P:\Game-Library-Auto-Archiver\GameSource"
-$testDestDir = "P:\Game-Library-Auto-Archiver\GameDest"
-
-# DIRECTORIES FOR THINKPAD
-# $sourceRefDir = "C:\Users\keith\Documents\Game-Library-Auto-Archiver\test env - source large game folders ref"  # ZIPs
-# $destRefDir =   "C:\Users\keith\Documents\Game-Library-Auto-Archiver\test env - dest game folders ref"  # Game folders
-# 
-# # Test directories (reset each run)
-# $testSourceDir = "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource"
-# $testDestDir =   "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameDest"
-
-# if (Test-Path "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameDest") {
-#     $systempc =  "thinkpad"
-# } elseif (Test-Path "P:\Game-Library-Auto-Archiver\GameDest") {
-#     $systempc = "alienware"
-# }
-
+if (Test-Path "P:\Game-Library-Auto-Archiver\GameDest") {
+    $testDestDir = "P:\Game-Library-Auto-Archiver\GameDest"
+    Write-Host "Game dest set to P drive path"
+} elseif (Test-Path "C:\Users\Keith\Documents\Game-Library-Auto-Archiver\GameDest") {
+    $testDestDir = "C:\Users\Keith\Documents\Game-Library-Auto-Archiver\GameDest"
+    Write-Host "Game dest set to C drive path"
+} else {
+    Write-Host "Didn't find either path (dest)"
+    exit 1
+}
 # Date variables for LastWriteTime
 $dates = @(
     (Get-Date).AddDays(-10),  # Old date
