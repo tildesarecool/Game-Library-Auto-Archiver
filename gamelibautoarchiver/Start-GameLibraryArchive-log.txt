@@ -1,0 +1,25 @@
+**********************
+PowerShell transcript start
+Start time: 20250328174120
+Username: GALACTICA\Keith
+RunAs User: GALACTICA\Keith
+Configuration Name: 
+Machine: GALACTICA (Microsoft Windows NT 10.0.19045.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -Command & { . '.\gamelibautoarchiver\gamelibautoarchiver.ps1' -sourceFolder 'P:\Game-Library-Auto-Archiver\GameSource' -destinationFolder 'P:\Game-Library-Auto-Archiver\GameDest' }
+Process ID: 52924
+PSVersion: 7.5.0
+PSEdition: Core
+GitCommitId: 7.5.0
+OS: Microsoft Windows 10.0.19045
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Users\Keith\Documents\repos\Game-Library-Auto-Archiver\gamelibautoarchiver\Start-GameLibraryArchive-log.txt
+the platform is unknown
+**********************
+PowerShell transcript end
+End time: 20250328174121
+**********************

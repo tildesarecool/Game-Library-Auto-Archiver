@@ -42,14 +42,6 @@ if ($maxJobsDefine -le 0) {
 
 $ThrottleLimit = [Math]::Min(8, [Math]::Max(1, [Math]::Floor($maxJobsDefine / 2)))
 
-# if ($maxJobsDefine -ge 8) { 
-#     $ThrottleLimit = 8 
-# } elseif ($maxJobsDefine -le 7 -and $maxJobsDefine -gt 0) {
-#     $ThrottleLimit = $maxJobsDefine
-# } else {
-#     Write-Host "ProcessorCount indeterminate or invalid, exiting"
-#     exit 1
-# }
 
 if (Test-Path "P:\Game-Library-Auto-Archiver\GameSource") {
     $libpath = "P:\Game-Library-Auto-Archiver\GameSource"

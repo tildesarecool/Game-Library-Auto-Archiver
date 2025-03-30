@@ -1,4 +1,4 @@
-# gamelibautoarchiver.psm1
+# gamelibautoarchiver.ps1
 # Main modules for game library archiver
 # March 2025
 # https://github.com/tildesarecool/Game-Library-Auto-Archiver
