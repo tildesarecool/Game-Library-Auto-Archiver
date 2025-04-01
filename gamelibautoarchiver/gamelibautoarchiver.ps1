@@ -2,6 +2,7 @@
 # Main modules for game library archiver
 # March 2025
 # https://github.com/tildesarecool/Game-Library-Auto-Archiver
+# pwsh -command '& { .\gamelibautoarchiver.ps1 -sourceFolder "(source path)" -destinationFolder "(destination path)"  }'
 
 # the psm1 is stored at
 # reporoot\gamelibautoarchiver\gamelibautoarchiver.psm1
@@ -196,7 +197,7 @@ function Remove-EmptySrcFolders {
 #         Write-Host "the names of the folders are: $($GetFolderInfo.Name)"
 #         Write-Host "the names of the folders are: $($GetFolderInfo.FullName)"
 
-    $FoldersWithoutUnderscores = Get-ValidSourceFolderList -nonunderscorelist $true
+    $FoldersWithoutUnderscores = Get-ValidSourceFolderList -UnderscoreList
 
     # so i'll pipe in that array to a for-eachboject and this will make it into an array of full paths, each one
     $PathArray = @()
@@ -220,6 +221,15 @@ function Start-GameLibAutoArchiver {
         Validate-SourcePathPopulation
 
         $getPlatform = Get-PlatformShortName
+        
+        $validList = Remove-EmptySrcFolders
+
+        #$FoldersWithoutUnderscores = Get-ValidSourceFolderList -NonUnderscoreList
+
+        # Write-Host "valid list should be $($FoldersWithoutUnderscores)"
+        Write-Host "valid list should be $($validList)"
+        
+        
         #Write-Host "the platform is $getPlatform"
         # $determineEmptyNot = Get-FolderSizeKB "P:\Game-Library-Auto-Archiver\SteamSource\bit Dungeon"
         #$determineEmptyNot = Get-FolderSizeKB "P:\Game-Library-Auto-Archiver\SteamSource\cyberpunk"
