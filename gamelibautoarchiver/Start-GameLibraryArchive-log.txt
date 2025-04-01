@@ -1,12 +1,12 @@
 **********************
 PowerShell transcript start
-Start time: 20250328174120
+Start time: 20250401082103
 Username: GALACTICA\Keith
 RunAs User: GALACTICA\Keith
 Configuration Name: 
 Machine: GALACTICA (Microsoft Windows NT 10.0.19045.0)
-Host Application: C:\Program Files\PowerShell\7\pwsh.dll -Command & { . '.\gamelibautoarchiver\gamelibautoarchiver.ps1' -sourceFolder 'P:\Game-Library-Auto-Archiver\GameSource' -destinationFolder 'P:\Game-Library-Auto-Archiver\GameDest' }
-Process ID: 52924
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -Command & { . '.\gamelibautoarchiver\gamelibautoarchiver.ps1' -sourceFolder 'P:\Game-Library-Auto-Archiver\SteamSource' -destinationFolder 'P:\Game-Library-Auto-Archiver\GameDest' }
+Process ID: 46868
 PSVersion: 7.5.0
 PSEdition: Core
 GitCommitId: 7.5.0
@@ -17,9 +17,8 @@ PSRemotingProtocolVersion: 2.3
 SerializationVersion: 1.1.0.1
 WSManStackVersion: 3.0
 **********************
-Transcript started, output file is C:\Users\Keith\Documents\repos\Game-Library-Auto-Archiver\gamelibautoarchiver\Start-GameLibraryArchive-log.txt
-the platform is unknown
+the names of the folders are: 03/16/2025 11:40:26 03/21/2025 11:40:26 03/31/2025 11:40:26 03/21/2025 11:40:26 03/31/2025 11:40:26 03/26/2025 11:40:26 03/16/2025 11:40:26 03/21/2025 11:40:26
 **********************
 PowerShell transcript end
-End time: 20250328174121
+End time: 20250401082104
 **********************

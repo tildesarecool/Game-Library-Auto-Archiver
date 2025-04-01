@@ -8,15 +8,20 @@
 # which means probably $PSScriptRoot is reporoot\gamelibautoarchiver 
 # so do i want to save the transcript to reporoot or actual reporoot\gamelibautoarchiver ?
 # I think reporoot\gamelibautoarchiver for now
+#
+# i created a folder junction so the platform function would pick up the platform name
+# new-item -ItemType Junction -Path "P:\Game-Library-Auto-Archiver\SteamSource" -Target "P:\Game-Library-Auto-Archiver\GameSource"
 
-# #[CmdletBinding(DefaultParameterSetName="Manual", SupportsShouldProcess=$true)]
-# <# 
-# #.SYNOPSIS
-# #    Compresses Steam game folders into dated zip archives with parallel processing and duplicate management.
-# #
-# #.DESCRIPTION
-# #    SteamZipper scans a ...
-# #>
+
+[CmdletBinding(DefaultParameterSetName="Manual", SupportsShouldProcess=$true)]
+<# 
+.SYNOPSIS
+    Compresses Steam game folders into dated zip archives with parallel processing and duplicate management.
+
+.DESCRIPTION
+    SteamZipper scans a ...
+#>
+
 # # param (
 # #     [Parameter(ParameterSetName="Manual")][string]$sourceFolder,
 # #     [Parameter(ParameterSetName="Manual")][string]$destinationFolder
@@ -26,6 +31,16 @@
 param (
     [string]$sourceFolder,
     [string]$destinationFolder
+#    [Parameter(ParameterSetName="Manual")][string]$sourceFile,
+#    [Parameter(ParameterSetName="Manual")][switch]$debugMode,
+#    [Parameter(ParameterSetName="Manual")][switch]$VerbMode,
+#    [Parameter(ParameterSetName="Manual")][switch]$keepDuplicates,
+#    [Parameter(ParameterSetName="Manual")][ValidateSet("Optimal", "Fastest", "NoCompression")][string]$CompressionLevel = "Optimal",
+#    [Parameter(ParameterSetName="Manual")][string]$answerFile,
+#    [Parameter(ParameterSetName="Manual")][string]$createAnswerFile,
+#    [Parameter(ParameterSetName="Manual")][switch]$Parallel,
+#    [Parameter(ParameterSetName="Manual")][ValidateRange(1, 16)][int]$MaxJobs = $global:maxJobsDefine,
+#    [Parameter(ParameterSetName="Manual")][switch]$Help
 )
 
 $ModuleRoot = $PSScriptRoot
@@ -73,7 +88,7 @@ function Validate-ScriptParameters {
 }
 
 # GLOBAL VARIABLES
-# these are all "coming soon". just like to be prepared.
+# commented out are all "coming soon". just like to be prepared.
 #$global:maxJobsDefine = [System.Environment]::ProcessorCount
 $global:PreferredDateFormat = "MMddyyyy"
 #$global:CompressionExtension = "zip"
@@ -112,7 +127,7 @@ function Get-FolderSizeKB {
 #    [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
-        [string]$folderPath,
+        $folderPath, # left untyped on purpose. so that folderPath can be either a string or a [System.IO.DirectoryInfo] type
         [int]$sizeLimitKB = 50
     )
     
@@ -128,19 +143,94 @@ function Get-FolderSizeKB {
     return $false
 }
 
+function Get-ValidSourceFolderList {
+    # underscored versus non-underscored
+    param (
+        [switch]$UnderscoreList,
+        [switch]$NonUnderscoreList
+    )
 
-function Main {
+    # still trying to decide what all this function should do. 
+    # so far it gets the subfolder list as an array
+    # then i use a second array to create the version with underscores instead of spaces
+
+    if ($UnderscoreList) {
+        return Get-ChildItem $sourceFolder -Directory | ForEach-Object { $_.Name -replace ' ', '_' }
+    }
+    elseif ($NonUnderscoreList) {
+        return Get-ChildItem $sourceFolder -Directory | Select-Object -ExpandProperty Name
+    }
+    return $false
+
+}
+
+#     $SrceSubfolders =@() # new array
+#     $SrceSubfoldersUnderscores = @()
+#     $SrceSubfolders = Get-ChildItem $sourceFolder -Directory | Select-Object -ExpandProperty Name #-replace ' ','_'   # populate array
+#     $SrceSubfoldersUnderscores = $SrceSubfolders -replace ' ','_' # too bruteforce? or too elegant? 
+    # Write-Host "initial list of subfolders is:"
+    # $SrceSubfoldersUnderscores | ForEach-Object {"Item: [$PSItem]"}
+
+    # apparently i'm actually returning strings with these return statement
+#    if ($underscorelist -eq $true ) { 
+#        return $SrceSubfoldersUnderscores 
+#    } elseif ($nonunderscorelist -eq $true) { 
+#        return $SrceSubfolders # Get-ChildItem $sourceFolder -Directory | Select-Object -ExpandProperty Name 
+#    } else { 
+#        return $false 
+#    }
+#}
+
+function Remove-EmptySrcFolders {
+
+# 
+# Removed $PathArrayNonEmpty and +=:
+# Instead of building a new array manually, Where-Object filters $PathArray to only include folders where Get-FolderSizeKB $_ returns $true.
+# This is more efficient (no array copying) and cleaner.
+#
+# The += Concern: Using $PathArrayNonEmpty += $_ works but is less efficient because it creates a new array each time 
+# --->(arrays in PowerShell are immutable, so += copies the array with the new element)<---. For small lists, it’s fine, but for larger ones, 
+# it’s slower than necessary.
+#        this usage works -
+#         $GetFolderInfo = Remove-EmptySrcFolders
+#         Write-Host "the names of the folders are: $($GetFolderInfo.Name)"
+#         Write-Host "the names of the folders are: $($GetFolderInfo.FullName)"
+
+    $FoldersWithoutUnderscores = Get-ValidSourceFolderList -nonunderscorelist $true
+
+    # so i'll pipe in that array to a for-eachboject and this will make it into an array of full paths, each one
+    $PathArray = @()
+#    $PathArrayNonEmpty = @()
+    # this line actually fills the array with the full path as an filesystem path/object
+    $PathArray = $FoldersWithoutUnderscores | ForEach-Object { Get-Item (Join-Path $sourceFolder $_) }
+
+    return $PathArray | Where-Object { Get-FolderSizeKB $_ }
+
+}
+
+
+
+function Start-GameLibAutoArchiver {
 
     # startt of transcript ##################################################
-    Start-Transcript -Path "$ModuleRoot\$global:logBaseName"
+    Start-Transcript -Path "$ModuleRoot\$logBaseName" | Out-Null
     #Start-GameLibraryArchive -LibraryPath $libpath -DestPath $zipDestpath
 
-    Validate-ScriptParameters
-    Validate-SourcePathPopulation
+        Validate-ScriptParameters
+        Validate-SourcePathPopulation
 
-    $getPlatform = Get-PlatformShortName
-    Write-Host "the platform is $getPlatform"
+        $getPlatform = Get-PlatformShortName
+        #Write-Host "the platform is $getPlatform"
+        # $determineEmptyNot = Get-FolderSizeKB "P:\Game-Library-Auto-Archiver\SteamSource\bit Dungeon"
+        #$determineEmptyNot = Get-FolderSizeKB "P:\Game-Library-Auto-Archiver\SteamSource\cyberpunk"
+        #Write-Host "Result of determining if path is empty or not is $($determineEmptyNot)"
 
+    #    Get-ValidSourceFolderList
+        # $folderswithUnderscores = Get-ValidSourceFolderList -underscorelist "underscorelist"
+        # $FoldersWithoutUnderscores = Get-ValidSourceFolderList -nonunderscorelist "nonunderscorelist"
+        # Write-Host "a list without underscores is $FoldersWithoutUnderscores"
+        # Write-Host "and"
+        # Write-Host "a list with underscores is $folderswithUnderscores"
 
 
 
@@ -148,11 +238,11 @@ function Main {
 
 
     # end of transcript ##################################################
-    Stop-Transcript
+    Stop-Transcript | Out-Null
 
 }
 
-Main
+Start-GameLibAutoArchiver
 
 #Export-ModuleMember -Function Start-GameLibraryArchive
 #Export-ModuleMember -Function Main
