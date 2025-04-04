@@ -124,6 +124,36 @@ function Get-PlatformShortName {
 }
 
 
+function Get-NonEmptySourceFolders {
+#   Output: Array of DirectoryInfo objects for non-empty folders (e.g., full paths like P:\...\bit Dungeon).
+#   Usage: $nonEmptyFolders = Get-NonEmptySourceFolders.
+
+    return Get-ChildItem $sourceFolder -Directory | Where-Object { Get-FolderSizeKB $_ }
+}
+
+function Get-DestFileNames {
+    #   Output: Array of DirectoryInfo objects for non-empty folders (e.g., full paths like P:\...\bit Dungeon).
+    #   Usage: $nonEmptyFolders = Get-NonEmptySourceFolders.
+    
+        return Get-ChildItem $destinationFolder -File  | Select-Object -ExpandProperty BaseName  #Where-Object {  $_.BaseName }
+}
+
+function ConvertTo-UnderscoreName {
+#   Input: A string (or piped array of strings).
+#   Output: Transformed string(s) (e.g., bit Dungeon → bit_Dungeon).
+#   Usage:
+#   Single: ConvertTo-UnderscoreName "bit Dungeon"
+#   Piped: $nonEmptyFolders.Name | ConvertTo-UnderscoreName
+
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
+        [string]$Name
+    )
+    process {
+        return $Name -replace ' ', '_'
+    }
+}
+
 function Get-FolderSizeKB {
 #    [CmdletBinding()]
     param (
@@ -144,71 +174,6 @@ function Get-FolderSizeKB {
     return $false
 }
 
-function Get-ValidSourceFolderList {
-    # underscored versus non-underscored
-    param (
-        [switch]$UnderscoreList,
-        [switch]$NonUnderscoreList
-    )
-
-    # still trying to decide what all this function should do. 
-    # so far it gets the subfolder list as an array
-    # then i use a second array to create the version with underscores instead of spaces
-
-    if ($UnderscoreList) {
-        return Get-ChildItem $sourceFolder -Directory | ForEach-Object { $_.Name -replace ' ', '_' }
-    }
-    elseif ($NonUnderscoreList) {
-        return Get-ChildItem $sourceFolder -Directory | Select-Object -ExpandProperty Name
-    }
-    return $false
-
-}
-
-#     $SrceSubfolders =@() # new array
-#     $SrceSubfoldersUnderscores = @()
-#     $SrceSubfolders = Get-ChildItem $sourceFolder -Directory | Select-Object -ExpandProperty Name #-replace ' ','_'   # populate array
-#     $SrceSubfoldersUnderscores = $SrceSubfolders -replace ' ','_' # too bruteforce? or too elegant? 
-    # Write-Host "initial list of subfolders is:"
-    # $SrceSubfoldersUnderscores | ForEach-Object {"Item: [$PSItem]"}
-
-    # apparently i'm actually returning strings with these return statement
-#    if ($underscorelist -eq $true ) { 
-#        return $SrceSubfoldersUnderscores 
-#    } elseif ($nonunderscorelist -eq $true) { 
-#        return $SrceSubfolders # Get-ChildItem $sourceFolder -Directory | Select-Object -ExpandProperty Name 
-#    } else { 
-#        return $false 
-#    }
-#}
-
-function Remove-EmptySrcFolders {
-
-# 
-# Removed $PathArrayNonEmpty and +=:
-# Instead of building a new array manually, Where-Object filters $PathArray to only include folders where Get-FolderSizeKB $_ returns $true.
-# This is more efficient (no array copying) and cleaner.
-#
-# The += Concern: Using $PathArrayNonEmpty += $_ works but is less efficient because it creates a new array each time 
-# --->(arrays in PowerShell are immutable, so += copies the array with the new element)<---. For small lists, it’s fine, but for larger ones, 
-# it’s slower than necessary.
-#        this usage works -
-#         $GetFolderInfo = Remove-EmptySrcFolders
-#         Write-Host "the names of the folders are: $($GetFolderInfo.Name)"
-#         Write-Host "the names of the folders are: $($GetFolderInfo.FullName)"
-
-    $FoldersWithoutUnderscores = Get-ValidSourceFolderList -UnderscoreList
-
-    # so i'll pipe in that array to a for-eachboject and this will make it into an array of full paths, each one
-    $PathArray = @()
-#    $PathArrayNonEmpty = @()
-    # this line actually fills the array with the full path as an filesystem path/object
-    $PathArray = $FoldersWithoutUnderscores | ForEach-Object { Get-Item (Join-Path $sourceFolder $_) }
-
-    return $PathArray | Where-Object { Get-FolderSizeKB $_ }
-
-}
-
 
 
 function Start-GameLibAutoArchiver {
@@ -220,14 +185,61 @@ function Start-GameLibAutoArchiver {
         Validate-ScriptParameters
         Validate-SourcePathPopulation
 
-        $getPlatform = Get-PlatformShortName
+
+        # Get validated non-empty folders: array with full paths, as FS objects
+        $nonEmptyFolders = Get-NonEmptySourceFolders
+
+#        Write-Host "valid list should be $($nonEmptyFolders)"
+
+        # Get their names with underscores for comparison: array of source folder names with _ in place of spaces
+        # - should still be FS objects -- just names with underscores, no full paths
+        $validatedNamesUnderscored = $nonEmptyFolders.Name | ConvertTo-UnderscoreName
+        #Write-Host "valid underscore list should be $($validatedNamesUnderscored)"
+
+        # Get destination files - obviously i need some functions to handle the destination half of this
+#        $destFiles = Get-ChildItem $destinationFolder -File | Select-Object -ExpandProperty BaseName
+
+#        Write-Host "valid list should be $($destFiles)"
+
+        # Compare
+        # $FileMatches = $validatedNamesUnderscored | Where-Object { $destFiles -contains $_ }
         
-        $validList = Remove-EmptySrcFolders
 
-        #$FoldersWithoutUnderscores = Get-ValidSourceFolderList -NonUnderscoreList
+        # using the Select-Object -ExpandProperty BaseName in the Get-DestFileNames function does return file names only, no paths
+        # but it also cuts off the .zip part of the name, which is probably better for file extension nuetrality in the long run
+        # right? as far as i know this array should still be FS objects
+        $DestFileList = Get-DestFileNames
+#        $DestFileList.
+        #Write-Host "file name list: $($DestFileList)"
 
-        # Write-Host "valid list should be $($FoldersWithoutUnderscores)"
-        Write-Host "valid list should be $($validList)"
+        $FileMatches = $validatedNamesUnderscored | Where-Object {$DestFileList -contains ($_ -split '_',-3)[6] } # ($DestFileList -split '_',-3)[6] 
+
+        #$justNames = ($DestFileList -split '_',-3)[6]
+        #Write-Host "file name matches: $($justNames)"
+        #Write-Host "file name matches: $($FileMatches)"
+
+        Write-Host "src name list: $($validatedNamesUnderscored)"
+        Write-Host "and"
+
+        $justFileNames  = $DestFileList | ForEach-Object { 
+            $_.Split("_")
+
+        }
+
+        Write-Host "dest file name list: $($DestFileList)"
+
+
+        # Write-Host "file name matches: $($FileMatches.count)"
+        # Write-Host "file name matches: $($FileMatches)"
+
+#        $getPlatform = Get-PlatformShortName
+#        
+#        $validList = Remove-EmptySrcFolders
+#
+#        $FoldersWithoutUnderscores = Get-ValidSourceFolderList -UnderscoreList
+
+#        Write-Host "valid list should be $($FoldersWithoutUnderscores)"
+        #Write-Host "valid list should be $($validList.fullName)"
         
         
         #Write-Host "the platform is $getPlatform"
@@ -241,11 +253,6 @@ function Start-GameLibAutoArchiver {
         # Write-Host "a list without underscores is $FoldersWithoutUnderscores"
         # Write-Host "and"
         # Write-Host "a list with underscores is $folderswithUnderscores"
-
-
-
-
-
 
     # end of transcript ##################################################
     Stop-Transcript | Out-Null
@@ -277,3 +284,62 @@ Start-GameLibAutoArchiver
 #    }
 #}
 
+
+
+# function Remove-EmptySrcFolders {
+# # Removed $PathArrayNonEmpty and +=:
+# # Instead of building a new array manually, Where-Object filters $PathArray to only include folders where Get-FolderSizeKB $_ returns $true.
+# # This is more efficient (no array copying) and cleaner.
+# #
+# # The += Concern: Using $PathArrayNonEmpty += $_ works but is less efficient because it creates a new array each time 
+# # --->(arrays in PowerShell are immutable, so += copies the array with the new element)<---. For small lists, it’s fine, but for larger ones, 
+# # it’s slower than necessary.
+# #        this usage works -
+# #         $GetFolderInfo = Remove-EmptySrcFolders
+# #         Write-Host "the names of the folders are: $($GetFolderInfo.Name)"
+# #         Write-Host "the names of the folders are: $($GetFolderInfo.FullName)"
+# 
+# 
+# 
+#     $FoldersWithoutUnderscores = Get-ValidSourceFolderList -NonUnderscoreList
+# 
+#     # so i'll pipe in that array to a for-eachboject and this will make it into an array of full paths, each one
+#     $PathArray = @()
+# #    $PathArrayNonEmpty = @()
+#     # this line actually fills the array with the full path as an filesystem path/object
+#     $PathArray = $FoldersWithoutUnderscores | ForEach-Object { Get-Item (Join-Path $sourceFolder $_) }
+# 
+#     return $PathArray | Where-Object { Get-FolderSizeKB $_ }
+# 
+# }
+
+
+
+# function Get-ValidSourceFolderList {
+#     # underscored versus non-underscored
+#     # using [switch] makes it so only -UnderscoreList is need, as support to -UnderscoreList (some value)
+#     param (
+#         [switch]$UnderscoreList,
+#         [switch]$NonUnderscoreList
+#     )
+# 
+#     # still trying to decide what all this function should do. 
+#     # so far it gets the subfolder list as an array
+#     # then i use a second array to create the version with underscores instead of spaces
+# 
+#     # below is saying: if the UnderscoreList parameter is used at all, return a list with foldernames
+#     # that have underscores instead of spaces 
+#     # (this has a problem if you just want names as opposed to full paths with names that have _ instad of spaces)
+#     #
+#     # and also if -NonUnderscoreList is used at all then return the non underscore version
+# 
+# 
+#     if ($UnderscoreList) {
+#         return Get-ChildItem $sourceFolder -Directory | ForEach-Object { $_.Name -replace ' ', '_' }
+#     }
+#     elseif ($NonUnderscoreList) {
+#         return Get-ChildItem $sourceFolder -Directory | Select-Object -ExpandProperty Name
+#     }
+#     return $false
+# 
+# }

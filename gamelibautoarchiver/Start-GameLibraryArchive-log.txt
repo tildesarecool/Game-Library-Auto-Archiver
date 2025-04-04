@@ -1,123 +1,26 @@
 **********************
 PowerShell transcript start
-Start time: 20250401115203
-Username: THINKPEG\keith
-RunAs User: THINKPEG\keith
+Start time: 20250403095433
+Username: GALACTICA\Keith
+RunAs User: GALACTICA\Keith
 Configuration Name: 
-Machine: THINKPEG (Microsoft Windows NT 10.0.26100.0)
-Host Application: C:\Program Files\PowerShell\7\pwsh.dll -command & { .\gamelibautoarchiver.ps1 -sourceFolder "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource" -destinationFolder "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameDest"  }
-Process ID: 2380
+Machine: GALACTICA (Microsoft Windows NT 10.0.19045.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -Command & { . '.\gamelibautoarchiver\gamelibautoarchiver.ps1' -sourceFolder 'P:\Game-Library-Auto-Archiver\SteamSource' -destinationFolder 'P:\Game-Library-Auto-Archiver\GameDest' }
+Process ID: 208732
 PSVersion: 7.5.0
 PSEdition: Core
 GitCommitId: 7.5.0
-OS: Microsoft Windows 10.0.26100
+OS: Microsoft Windows 10.0.19045
 Platform: Win32NT
 PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
 PSRemotingProtocolVersion: 2.3
 SerializationVersion: 1.1.0.1
 WSManStackVersion: 3.0
 **********************
-Get-Item: C:\Users\keith\Documents\repos\Game-Library-Auto-Archiver\gamelibautoarchiver\gamelibautoarchiver.ps1:206
-Line |
- 206 |  … nderscores | ForEach-Object { Get-Item (Join-Path $sourceFolder $_) }
-     |                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     | Cannot find path 'C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource\bit_Dungeon' because it does not exist.
-Get-Item: C:\Users\keith\Documents\repos\Game-Library-Auto-Archiver\gamelibautoarchiver\gamelibautoarchiver.ps1:206
-Line |
- 206 |  … nderscores | ForEach-Object { Get-Item (Join-Path $sourceFolder $_) }
-     |                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     | Cannot find path 'C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource\bit_Dungeon'
-     | because it does not exist.
-
-Get-Item: C:\Users\keith\Documents\repos\Game-Library-Auto-Archiver\gamelibautoarchiver\gamelibautoarchiver.ps1:206
-Line |
- 206 |  … nderscores | ForEach-Object { Get-Item (Join-Path $sourceFolder $_) }
-     |                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     | Cannot find path 'C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource\bit_Dungeon_II' because it does not exist.
-Get-Item: C:\Users\keith\Documents\repos\Game-Library-Auto-Archiver\gamelibautoarchiver\gamelibautoarchiver.ps1:206
-Line |
- 206 |  … nderscores | ForEach-Object { Get-Item (Join-Path $sourceFolder $_) }
-     |                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     | Cannot find path
-     | 'C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource\bit_Dungeon_II' because it
-     | does not exist.
-
-Get-Item: C:\Users\keith\Documents\repos\Game-Library-Auto-Archiver\gamelibautoarchiver\gamelibautoarchiver.ps1:206
-Line |
- 206 |  … nderscores | ForEach-Object { Get-Item (Join-Path $sourceFolder $_) }
-     |                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     | Cannot find path 'C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource\bit_Dungeon_III' because it does not exist.
-Get-Item: C:\Users\keith\Documents\repos\Game-Library-Auto-Archiver\gamelibautoarchiver\gamelibautoarchiver.ps1:206
-Line |
- 206 |  … nderscores | ForEach-Object { Get-Item (Join-Path $sourceFolder $_) }
-     |                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     | Cannot find path
-     | 'C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource\bit_Dungeon_III' because it
-     | does not exist.
-
-Get-Item: C:\Users\keith\Documents\repos\Game-Library-Auto-Archiver\gamelibautoarchiver\gamelibautoarchiver.ps1:206
-Line |
- 206 |  … nderscores | ForEach-Object { Get-Item (Join-Path $sourceFolder $_) }
-     |                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     | Cannot find path 'C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource\Dig_Dog' because it does not exist.
-Get-Item: C:\Users\keith\Documents\repos\Game-Library-Auto-Archiver\gamelibautoarchiver\gamelibautoarchiver.ps1:206
-Line |
- 206 |  … nderscores | ForEach-Object { Get-Item (Join-Path $sourceFolder $_) }
-     |                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     | Cannot find path 'C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource\Dig_Dog'
-     | because it does not exist.
-
-Get-Item: C:\Users\keith\Documents\repos\Game-Library-Auto-Archiver\gamelibautoarchiver\gamelibautoarchiver.ps1:206
-Line |
- 206 |  … nderscores | ForEach-Object { Get-Item (Join-Path $sourceFolder $_) }
-     |                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     | Cannot find path 'C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource\doom_2016' because it does not exist.
-Get-Item: C:\Users\keith\Documents\repos\Game-Library-Auto-Archiver\gamelibautoarchiver\gamelibautoarchiver.ps1:206
-Line |
- 206 |  … nderscores | ForEach-Object { Get-Item (Join-Path $sourceFolder $_) }
-     |                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     | Cannot find path 'C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource\doom_2016'
-     | because it does not exist.
-
-Get-Item: C:\Users\keith\Documents\repos\Game-Library-Auto-Archiver\gamelibautoarchiver\gamelibautoarchiver.ps1:206
-Line |
- 206 |  … nderscores | ForEach-Object { Get-Item (Join-Path $sourceFolder $_) }
-     |                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     | Cannot find path 'C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource\Horizon_Chase' because it does not exist.
-Get-Item: C:\Users\keith\Documents\repos\Game-Library-Auto-Archiver\gamelibautoarchiver\gamelibautoarchiver.ps1:206
-Line |
- 206 |  … nderscores | ForEach-Object { Get-Item (Join-Path $sourceFolder $_) }
-     |                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     | Cannot find path
-     | 'C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource\Horizon_Chase' because it does
-     | not exist.
-
-Get-Item: C:\Users\keith\Documents\repos\Game-Library-Auto-Archiver\gamelibautoarchiver\gamelibautoarchiver.ps1:206
-Line |
- 206 |  … nderscores | ForEach-Object { Get-Item (Join-Path $sourceFolder $_) }
-     |                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     | Cannot find path 'C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource\Markov_Alg' because it does not exist.
-Get-Item: C:\Users\keith\Documents\repos\Game-Library-Auto-Archiver\gamelibautoarchiver\gamelibautoarchiver.ps1:206
-Line |
- 206 |  … nderscores | ForEach-Object { Get-Item (Join-Path $sourceFolder $_) }
-     |                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     | Cannot find path 'C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource\Markov_Alg'
-     | because it does not exist.
-
-Get-Item: C:\Users\keith\Documents\repos\Game-Library-Auto-Archiver\gamelibautoarchiver\gamelibautoarchiver.ps1:206
-Line |
- 206 |  … nderscores | ForEach-Object { Get-Item (Join-Path $sourceFolder $_) }
-     |                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     | Cannot find path 'C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource\Ms._PAC-MAN' because it does not exist.
-Get-Item: C:\Users\keith\Documents\repos\Game-Library-Auto-Archiver\gamelibautoarchiver\gamelibautoarchiver.ps1:206
-Line |
- 206 |  … nderscores | ForEach-Object { Get-Item (Join-Path $sourceFolder $_) }
-     |                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     | Cannot find path 'C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource\Ms._PAC-MAN'
-     | because it does not exist.
-
-valid list should be C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource\Outzone
+src name list: bit_Dungeon bit_Dungeon_II bit_Dungeon_III Horizon_Chase Markov_Alg Ms._PAC-MAN Outzone PAC-MAN
+and
+dest file name list: bit_Dungeon_11012024_steam bit_Dungeon_II_11012024_steam bit_Dungeon_III_11012024_steam Dig_Dog_11012025_steam Horizon_Chase_12152024_steam Markov_Alg_12212024_steam Outzone_11012024_steam PAC-MAN_07062025_steam
 **********************
 PowerShell transcript end
-End time: 20250401115204
+End time: 20250403095433
 **********************
