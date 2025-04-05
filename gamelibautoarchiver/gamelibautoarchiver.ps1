@@ -13,6 +13,10 @@
 # i created a folder junction so the platform function would pick up the platform name
 # new-item -ItemType Junction -Path "P:\Game-Library-Auto-Archiver\SteamSource" -Target "P:\Game-Library-Auto-Archiver\GameSource"
 
+# 4 April 2025
+# Note: I've recently learned that zip files created with compress-archive have a file size limit of 2GB, which I was not aware of. The only work arounds as far as I can tell is to either auto-create ~2 gig zip files of folders larger than this or to use a third party utility like 7zip. I don't have any interest in splitting a 110 gigabyte folder into many 2 gigabyte zip files. Actually the default zip file size limit is 4 gigaybtes anyway. Apparently compress-archive doesn't do zip64 which has no such file size limits. I actually thought of my own alternative as well which I'm still assessing.
+# 
+# A long winded a way of saying this script is on hold while I 're-assess my options.'
 
 [CmdletBinding(DefaultParameterSetName="Manual", SupportsShouldProcess=$true)]
 <# 
@@ -343,3 +347,23 @@ Start-GameLibAutoArchiver
 #     return $false
 # 
 # }
+
+
+
+
+
+"$sourcePath = 'C:\SourceFolder';
+$vhdxPath = 'P:\Program Files (x86)\Steam\steamapps\common\Dig Dog';
+$folderSize = (Get-ChildItem $sourcePath -Recurse -File | Measure-Object -Property Length -Sum).Sum;
+$vhdxSize = $folderSize + 30MB;
+Measure-Command {
+New-VHD -Path $vhdxPath -SizeBytes $vhdxSize -Dynamic;
+$disk = Mount-VHD -Path $vhdxPath -PassThru;
+Initialize-Disk -Number $disk.Number -PartitionStyle GPT;
+ New-Partition -DiskNumber $disk.Number -UseMaximumSize -AssignDriveLetter | Format-Volume -FileSystem NTFS -Confirm:$false;
+$driveLetter = (Get-Partition -DiskNumber $disk.Number).DriveLetter;
+Copy-Item -Path \'$sourcePath\*\' -Destination \'$driveLetter`:\' -Recurse;
+Get-ChildItem \'$driveLetter`:\' -Recurse | ForEach-Object { compact /c \'$($_.FullName)\'
+};
+Dismount-VHD -Path $vhdxPath;
+compact /c $vhdxPath } | format-table TotalSeconds"
