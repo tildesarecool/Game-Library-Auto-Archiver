@@ -1,10 +1,24 @@
 # Create-VHDX.ps1
 # $sourcePath = 'P:\Program Files (x86)\Steam\steamapps\common\Dig Dog'
 # $vhdxPath = 'P:\DigDog2.vhdx'
-$sourcePath = 'P:\Program Files (x86)\Steam\steamapps\common\DiRT Rally 2.0'
-$vhdxPath = 'P:\dirt rally 2 save\dirtrally2.vhdx'
+$sourcePath = 'c:\Program Files (x86)\Steam\steamapps\common\Dig Dog'
+$vhdxPath = 'C:\Users\keith\Documents\Game-Library-Auto-Archiver\DigDog2.vhdx'
+#$sourcePath = 'P:\Program Files (x86)\Steam\steamapps\common\DiRT Rally 2.0'
+#$vhdxPath = 'P:\dirt rally 2 save\dirtrally2.vhdx'
 #$folderSize = 130 #(Get-ChildItem $sourcePath -Recurse -File | Measure-Object -Property Length -Sum).Sum
-$vhdxSize = 140GB
+#$vhdxSize = 130GB # dirt rally 2.0
+$vhdxSize = 110MB # dig dog
+
+# the vhd related cmdlets like new-vhd are enabled via turning on hyper-v
+# check hyper-v status with 
+# Get-WindowsOptionalFeature -Online | Where-Object { $_.FeatureName -like "Microsoft-Hyper-V*" }
+# if it says 'state: disabled" then enable with ...
+# Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
+# likely you'll have reboot windows
+# alternatively, if your Windows version is incabpable of hyper-v or you just don't want it
+# all or most all the functionality can be re-created just using diskpart
+#https://grok.com/share/bGVnYWN5_c5194154-817a-4b29-88da-22d0ed7ca621
+
 
 Measure-Command {
     New-VHD -Path $vhdxPath -SizeBytes $vhdxSize -Dynamic
