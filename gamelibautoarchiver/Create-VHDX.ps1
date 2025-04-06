@@ -1,8 +1,10 @@
 # Create-VHDX.ps1
-$sourcePath = 'P:\Program Files (x86)\Steam\steamapps\common\Dig Dog'
-$vhdxPath = 'P:\DigDog2.vhdx'
+# $sourcePath = 'P:\Program Files (x86)\Steam\steamapps\common\Dig Dog'
+# $vhdxPath = 'P:\DigDog2.vhdx'
+$sourcePath = 'P:\Program Files (x86)\Steam\steamapps\common\DiRT Rally 2.0'
+$vhdxPath = 'P:\dirt rally 2 save\dirtrally2.vhdx'
 #$folderSize = 130 #(Get-ChildItem $sourcePath -Recurse -File | Measure-Object -Property Length -Sum).Sum
-$vhdxSize = 140MB
+$vhdxSize = 140GB
 
 Measure-Command {
     New-VHD -Path $vhdxPath -SizeBytes $vhdxSize -Dynamic
@@ -11,7 +13,7 @@ Measure-Command {
     #Read-Host "press any key to continue"
     Initialize-Disk -Number $disk.Number -PartitionStyle GPT
     #Read-Host "press any key to continue"
-    New-Partition -DiskNumber $disk.Number -UseMaximumSize -AssignDriveLetter | Format-Volume -FileSystem NTFS -Confirm:$false | Out-Null
+    New-Partition -DiskNumber $disk.Number -UseMaximumSize -AssignDriveLetter | Format-Volume -FileSystem NTFS -Confirm:$false 
     #Read-Host "press any key to continue"
     $driveLetter = (Get-Partition -DiskNumber $disk.Number).DriveLetter
     $driveLetter = [string]$driveLetter # 'E' as [string], but not necessary here
