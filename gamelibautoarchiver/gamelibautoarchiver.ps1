@@ -136,10 +136,10 @@ function Get-NonEmptySourceFolders {
 }
 
 function Get-DestFileNames {
-    #   Output: Array of DirectoryInfo objects for non-empty folders (e.g., full paths like P:\...\bit Dungeon).
-    #   Usage: $nonEmptyFolders = Get-NonEmptySourceFolders.
+    #   Output: Array of DirectoryInfo objects for existing destination files (e.g., full paths like P:\...\bit Dungeon).
+    #   Usage: $destinationFiles = Get-NonEmptySourceFolders.
     
-        return Get-ChildItem $destinationFolder -File  | Select-Object -ExpandProperty BaseName  #Where-Object {  $_.BaseName }
+    return Get-ChildItem $destinationFolder -File  | Select-Object -ExpandProperty BaseName  #Where-Object {  $_.BaseName }
 }
 
 function ConvertTo-UnderscoreName {
@@ -189,6 +189,7 @@ function Start-GameLibAutoArchiver {
         Validate-ScriptParameters
         Validate-SourcePathPopulation
 
+        $FilenameSplit = @()
 
         # Get validated non-empty folders: array with full paths, as FS objects
         $nonEmptyFolders = Get-NonEmptySourceFolders
@@ -225,15 +226,28 @@ function Start-GameLibAutoArchiver {
         Write-Host "src name list: $($validatedNamesUnderscored)"
         Write-Host "and"
 
-        $justFileNames  = $DestFileList | ForEach-Object { 
-            $_.Split("_")
-
-        }
-
-        Write-Host "dest file name list: $($DestFileList)"
+        $namesSplitted = ($DestFileList[0]) -split "_"
+        $elementcount = $namesSplitted.count
+        $justGameName = $($namesSplitted[0..($elementcount - 3)])
 
 
-        # Write-Host "file name matches: $($FileMatches.count)"
+#        $justFileNames  = $DestFileList | ForEach-Object { 
+#            $namesSplitted = $_.Split("_")
+#            $justSplit = $namesSplitted[0..-3]
+#
+#            #$FilenameSplit += ($namesSplitted)[0..-3]
+#
+#        }
+#
+#        Write-Host "dest file name list: $($DestFileList)`n"
+#
+        write-host "namesSplitted is $($namesSplitted)`n"
+        Write-Host "justGameName is $($justGameName)`n"
+#
+#        write-host "justSplit is $($justSplit)`n"
+
+
+        #Write-Host "file name matches: $($FileMatches.count)"
         # Write-Host "file name matches: $($FileMatches)"
 
 #        $getPlatform = Get-PlatformShortName
@@ -352,18 +366,18 @@ Start-GameLibAutoArchiver
 
 
 
-"$sourcePath = 'C:\SourceFolder';
-$vhdxPath = 'P:\Program Files (x86)\Steam\steamapps\common\Dig Dog';
-$folderSize = (Get-ChildItem $sourcePath -Recurse -File | Measure-Object -Property Length -Sum).Sum;
-$vhdxSize = $folderSize + 30MB;
-Measure-Command {
-New-VHD -Path $vhdxPath -SizeBytes $vhdxSize -Dynamic;
-$disk = Mount-VHD -Path $vhdxPath -PassThru;
-Initialize-Disk -Number $disk.Number -PartitionStyle GPT;
- New-Partition -DiskNumber $disk.Number -UseMaximumSize -AssignDriveLetter | Format-Volume -FileSystem NTFS -Confirm:$false;
-$driveLetter = (Get-Partition -DiskNumber $disk.Number).DriveLetter;
-Copy-Item -Path \'$sourcePath\*\' -Destination \'$driveLetter`:\' -Recurse;
-Get-ChildItem \'$driveLetter`:\' -Recurse | ForEach-Object { compact /c \'$($_.FullName)\'
-};
-Dismount-VHD -Path $vhdxPath;
-compact /c $vhdxPath } | format-table TotalSeconds"
+# "$sourcePath = 'C:\SourceFolder';
+# $vhdxPath = 'P:\Program Files (x86)\Steam\steamapps\common\Dig Dog';
+# $folderSize = (Get-ChildItem $sourcePath -Recurse -File | Measure-Object -Property Length -Sum).Sum;
+# $vhdxSize = $folderSize + 30MB;
+# Measure-Command {
+# New-VHD -Path $vhdxPath -SizeBytes $vhdxSize -Dynamic;
+# $disk = Mount-VHD -Path $vhdxPath -PassThru;
+# Initialize-Disk -Number $disk.Number -PartitionStyle GPT;
+#  New-Partition -DiskNumber $disk.Number -UseMaximumSize -AssignDriveLetter | Format-Volume -FileSystem NTFS -Confirm:$false;
+# $driveLetter = (Get-Partition -DiskNumber $disk.Number).DriveLetter;
+# Copy-Item -Path \'$sourcePath\*\' -Destination \'$driveLetter`:\' -Recurse;
+# Get-ChildItem \'$driveLetter`:\' -Recurse | ForEach-Object { compact /c \'$($_.FullName)\'
+# };
+# Dismount-VHD -Path $vhdxPath;
+# compact /c $vhdxPath } | format-table TotalSeconds"
