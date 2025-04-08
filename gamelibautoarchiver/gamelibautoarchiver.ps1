@@ -128,6 +128,23 @@ function Get-PlatformShortName {
 }
 
 
+function Get-FileDateStamp {
+    param ([Parameter(Mandatory=$true)] [string]$InputValue)
+    if ($InputValue.Length -eq $global:PreferredDateFormat.Length) {
+        try { return [datetime]::ParseExact($InputValue, $global:PreferredDateFormat, $null) }
+        catch { if ($VerbMode) { Write-Host "Warning: Invalid date code '$InputValue'. Expected format: $global:PreferredDateFormat" }; return $null }  # Changed from $debugMode
+    }
+    $parts = $InputValue -split "_"
+    if ($parts.Count -ge 3) {
+        try { return [datetime]::ParseExact($parts[-2], $global:PreferredDateFormat, $null) }
+        catch { if ($VerbMode) { Write-Host "Unable to parse date from '$InputValue'" }; return $null }  # Changed from $debugMode
+    }
+    if (Test-Path -Path $InputValue -PathType Container) { return (Get-Item -Path $InputValue).LastWriteTime }
+    if ($VerbMode) { Write-Host "'$InputValue' is neither a valid date code, zip file, nor folder" }  # Changed from $debugMode
+    return $null
+}
+
+
 function Get-NonEmptySourceFolders {
 #   Output: Array of DirectoryInfo objects for non-empty folders (e.g., full paths like P:\...\bit Dungeon).
 #   Usage: $nonEmptyFolders = Get-NonEmptySourceFolders.
@@ -180,6 +197,8 @@ function Get-FolderSizeKB {
 
 
 
+
+
 function Start-GameLibAutoArchiver {
 
     # startt of transcript ##################################################
@@ -227,9 +246,12 @@ function Start-GameLibAutoArchiver {
         Write-Host "and"
 
         $namesSplitted = ($DestFileList[0]) -split "_"
-        $elementcount = $namesSplitted.count
-        $justGameName = $($namesSplitted[0..($elementcount - 3)])
+        $elementcount = $namesSplitted.count - 3
+        $justGameName = $($namesSplitted[0..$elementcount])
 
+
+        
+        
 
 #        $justFileNames  = $DestFileList | ForEach-Object { 
 #            $namesSplitted = $_.Split("_")
@@ -243,7 +265,18 @@ function Start-GameLibAutoArchiver {
 #
         write-host "namesSplitted is $($namesSplitted)`n"
         Write-Host "justGameName is $($justGameName)`n"
-#
+
+        $joinBack = $justGameName -join "_"
+
+        Write-Host "joinBack is $($justGameName -join "_")`n"
+
+        $getDatefromCode = Get-FileDateStamp 01042025
+        Write-Host "getDatefromCode value is $getDatefromCode"
+
+        $getCodeFromdate = Get-FileDateStamp "01/04/2025 00:00:00"
+        Write-Host "getDatefromCode value is $getCodeFromdate"
+        
+        #
 #        write-host "justSplit is $($justSplit)`n"
 
 

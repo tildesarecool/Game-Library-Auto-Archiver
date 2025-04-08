@@ -21,7 +21,7 @@ $vhdxSize = 110MB # dig dog
 
 
 Measure-Command {
-    New-VHD -Path $vhdxPath -SizeBytes $vhdxSize -Dynamic
+    New-VHD -Path $vhdxPath -SizeBytes $vhdxSize -Dynamic # only works with hyper-v enabled
     #Read-Host "press any key to continue"
     $disk = Mount-VHD -Path $vhdxPath -PassThru
     #Read-Host "press any key to continue"
@@ -66,5 +66,5 @@ Measure-Command {
 #    Get-ChildItem "$driveLetter`:\" -Recurse | ForEach-Object { compact /c $_.FullName }
 #    Dismount-VHD -Path $vhdxPath
 #    Read-Host "press any key to continue: last step is to compact the vhdx itself - $($vhdxPath)"
-    compact /c $vhdxPath
+#    compact /c $vhdxPath
 } | Format-Table TotalSeconds
