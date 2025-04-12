@@ -13,6 +13,10 @@
 # i created a folder junction so the platform function would pick up the platform name
 # new-item -ItemType Junction -Path "P:\Game-Library-Auto-Archiver\SteamSource" -Target "P:\Game-Library-Auto-Archiver\GameSource"
 
+# https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_arrays?view=powershell-7.5
+# https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_pipelines?view=powershell-7.5
+# https://grok.com/share/bGVnYWN5_e92068f6-0681-4d44-b2ca-6d88d0ca66a9
+
 # 4 April 2025
 # Note: I've recently learned that zip files created with compress-archive have a file size limit of 2GB, which I was not aware of. The only work arounds as far as I can tell is to either auto-create ~2 gig zip files of folders larger than this or to use a third party utility like 7zip. I don't have any interest in splitting a 110 gigabyte folder into many 2 gigabyte zip files. Actually the default zip file size limit is 4 gigaybtes anyway. Apparently compress-archive doesn't do zip64 which has no such file size limits. I actually thought of my own alternative as well which I'm still assessing.
 # 
@@ -95,7 +99,7 @@ function Validate-ScriptParameters {
 # GLOBAL VARIABLES
 # commented out are all "coming soon". just like to be prepared.
 #$global:maxJobsDefine = [System.Environment]::ProcessorCount
-$global:PreferredDateFormat = "MMddyyyy"
+$PreferredDateFormat = "MMddyyyy"
 #$global:CompressionExtension = "zip"
 $global:sizeLimitKB = 50 # arbitrary folder size
 $global:logBaseName = "Start-GameLibraryArchive-log.txt"
@@ -129,20 +133,114 @@ function Get-PlatformShortName {
 
 
 function Get-FileDateStamp {
-    param ([Parameter(Mandatory=$true)] [string]$InputValue)
-    if ($InputValue.Length -eq $global:PreferredDateFormat.Length) {
-        try { return [datetime]::ParseExact($InputValue, $global:PreferredDateFormat, $null) }
-        catch { if ($VerbMode) { Write-Host "Warning: Invalid date code '$InputValue'. Expected format: $global:PreferredDateFormat" }; return $null }  # Changed from $debugMode
+    # $FileName is either a path to a folder or the zip file name. 
+    # must pass in whole path for the folder but just a file name is fine for zip
+    # so the folder i do the lastwritetime.tostring to get the date
+    # and zip file name parse to date code with the [-2]
+
+    #I didn't think I'd have to re-think this function ever since it 'was' working but
+    # i discoverred get-date can also do some converting so
+    #
+    # scenario 1: given folder last write date convert to a string of format MMddyyyy
+    #  $GameFolder = Get-Item "P:\Game-Library-Auto-Archiver\GameSource\bit Dungeon" # sample value: Sunday, March 16, 2025 11:40:26
+    # $gameFolderWriteTime = $GameFolder.LastWriteTime # $gameFolderWriteTime is date object
+    # $gameFolderDateCode = $gameFolderWriteTime | Get-Date -Format "MMddyyyy"
+    # $gameFolderDateCode now string value of 03162025
+    #
+    # scenario 2: given string value "03162025" convert to date object
+    #
+    # $getAdatecode = "03162025"
+    # $StrToDateObj = [datetime]::ParseExact($getAdatecode, "MMddyyyy", $null) # $StrToDateObj now a date object
+    # 
+    # so really the function should either take in a zip file name as a string or a 
+
+    param ([Parameter(Mandatory=$true)] [string]$StrToConvert)
+
+    #$ParamLengthValidate = ( $PreferredDateFormat.Length -eq $StrToConvert.Length )
+    #$SeeIfLeaf = Test-Path (Join-Path -Path $sourceFolder -ChildPath $StrToConvert)
+
+    #$SeeIfAbsPath = ( (Split-Path -Path $StrToConvert -IsAbsolute) -or (Test-Path $StrToConvert) )
+    $SeeIfAbsPath = Test-Path $StrToConvert
+
+    if (-not $SeeIfAbsPath) {
+        $seeIfJoinedPath = Join-Path -Path $destinationFolder -ChildPath $StrToConvert
+        $JoinedPathMakeAbs = Test-Path $seeIfJoinedPath # splitpath just checks if absolute. doesn't try to determine if the path exists
+
+        if ($JoinedPathMakeAbs) {
+            Write-Host "after join the path is $($seeIfJoinedPath) and whether it's a valid path is $($JoinedPathMakeAbs)"
+            return $seeIfJoinedPath
+        }
     }
-    $parts = $InputValue -split "_"
-    if ($parts.Count -ge 3) {
-        try { return [datetime]::ParseExact($parts[-2], $global:PreferredDateFormat, $null) }
-        catch { if ($VerbMode) { Write-Host "Unable to parse date from '$InputValue'" }; return $null }  # Changed from $debugMode
+
+    if ($SeeIfAbsPath) {
+        Write-Host "`nvalue of SeeIfAbsPath is $($SeeIfAbsPath) and passed in value is $($StrToConvert)`n"
+        return $SeeIfAbsPath
     }
-    if (Test-Path -Path $InputValue -PathType Container) { return (Get-Item -Path $InputValue).LastWriteTime }
-    if ($VerbMode) { Write-Host "'$InputValue' is neither a valid date code, zip file, nor folder" }  # Changed from $debugMode
-    return $null
+
+    Write-Host "value of seeIfJoinedPath is $($seeIfJoinedPath )`n"
+    Write-Host "value of SeeIfAbsPath is $($SeeIfAbsPath)`n"
+    #Write-Host "value of testJoinedPath is $($testJoinedPath)`n"
+
+    #$ParamLengthValidate = ( ($PreferredDateFormat.Length -eq $StrToConvert.Length) -and -not (Test-Path $StrToConvert ) -and -not ($SeeIfLeaf) )
+
+    $ParamLengthValidate = ( $SeeIfAbsPath )#-or $testJoinedPath)
+
+    Write-Host "value of ParamLengthValidate is $($ParamLengthValidate)" # returns True or false
+
+    if (-not $ParamLengthValidate) {
+        Write-Host "value sent in $($StrToConvert), returning date object version...`n" # converted to date object
+        # now return date and exit function
+        return [datetime]::ParseExact($StrToConvert, $PreferredDateFormat, $null)
+    }
+
+#    if (($PreferredDateFormat.Length -eq $StrToConvert.Length) -and -not (Test-Path $StrToConvert)) {
+
+
 }
+#     $sampleDate = "03/31/2025 00:00:00"
+# 
+#     $convertedDate = [datetime]::ParseExact($sampleDate, $global:PreferredDateFormat, $null)
+# 
+#     write-host "convertedDate is $($convertedDate)"
+# 
+#     if ($InputValue.Length -eq $global:PreferredDateFormat.Length) {
+#         try { 
+#             Write-Host "(first if/about split) value of global:PreferredDateFormat is $global:PreferredDateFormat"
+#             Write-Host "InputValue.Length -eq global:PreferredDateFormat.Length is ($($InputValue.Length) -eq $($global:PreferredDateFormat.Length))"
+#             return [datetime]::ParseExact($InputValue, $global:PreferredDateFormat, $null) 
+#         } catch {
+#             Write-Output "Warning: Invalid DateCode format. Expected format is $global:PreferredDateFormat."
+#             return $null
+#         }
+#     }
+#     #$parts = $InputValue -split "_"
+#     $justdate = ""
+#     if (Test-Path -Path $InputValue -PathType Container) {
+#         $FolderModDate = (Get-Item -path $InputValue).LastWriteTime.ToString($global:PreferredDateFormat)
+#         $FolderModDate = [datetime]::ParseExact($FolderModDate,$PreferredDateFormat,$null)
+#         if ($FolderModDate -is [datetime]) {
+#             Write-Host "value sent in, `n`'$($InputValue)`' `nis a valid folder path"
+#             return $FolderModDate
+#         }
+#     } elseif ( Test-Path -Path $InputValue -PathType Leaf) {
+#         try {
+#             $justdate = $InputValue -split "_"
+#             if ($justdate.Length -ge 2) {
+#                 $justdate = $justdate[-2]
+#                 if ($justdate -eq 8) {
+#                     return [datetime]::ParseExact($justdate,$global:PreferredDateFormat,$null)
+#                 }
+#             }
+#         }
+#         catch {
+#             Write-Host "Unable to determine or convert to date object from value $justdate"
+#             return $null
+#         }
+#     }  elseif  ( (!(Test-Path -Path $FileName -PathType Leaf)) -and (!( Test-Path -Path $FileName -PathType Container) ) )    {
+#         Write-Host "the filename parameters, $FileName, is not a folder or a file"
+#         return $null    
+#     }
+# }
 
 
 function Get-NonEmptySourceFolders {
@@ -236,22 +334,18 @@ function Start-GameLibAutoArchiver {
 #        $DestFileList.
         #Write-Host "file name list: $($DestFileList)"
 
-        $FileMatches = $validatedNamesUnderscored | Where-Object {$DestFileList -contains ($_ -split '_',-3)[6] } # ($DestFileList -split '_',-3)[6] 
+        #$FileMatches = $validatedNamesUnderscored | Where-Object {$DestFileList -contains ($_ -split '_',-3)[6] } # ($DestFileList -split '_',-3)[6] 
 
         #$justNames = ($DestFileList -split '_',-3)[6]
         #Write-Host "file name matches: $($justNames)"
         #Write-Host "file name matches: $($FileMatches)"
 
-        Write-Host "src name list: $($validatedNamesUnderscored)"
-        Write-Host "and"
+#         Write-Host "src name list: $($validatedNamesUnderscored)"
+#         Write-Host "and"
 
-        $namesSplitted = ($DestFileList[0]) -split "_"
-        $elementcount = $namesSplitted.count - 3
-        $justGameName = $($namesSplitted[0..$elementcount])
-
-
-        
-        
+#         $namesSplitted = ($DestFileList[0]) -split "_"
+#         $elementcount = $namesSplitted.count - 3
+#         $justGameName = $($namesSplitted[0..$elementcount])
 
 #        $justFileNames  = $DestFileList | ForEach-Object { 
 #            $namesSplitted = $_.Split("_")
@@ -263,18 +357,29 @@ function Start-GameLibAutoArchiver {
 #
 #        Write-Host "dest file name list: $($DestFileList)`n"
 #
-        write-host "namesSplitted is $($namesSplitted)`n"
-        Write-Host "justGameName is $($justGameName)`n"
+#         write-host "namesSplitted is $($namesSplitted)`n"
+#         Write-Host "justGameName is $($justGameName)`n"
+# 
+#         $joinBack = $justGameName -join "_"
+# 
+#         Write-Host "joinBack is $($justGameName -join "_")`n"
+# 
+         $getDatefromCode = Get-FileDateStamp 01042025
+         Write-Host "getDatefromCode value is $getDatefromCode"
+# 
+#         $getDateFromPathFolder = Get-FileDateStamp "P:\Game-Library-Auto-Archiver\GameSource\bit Dungeon III"
+#         Write-Host "getDatefromCode value is $getDateFromPathFolder"
+# 
+#         $getDateCodeFromDate = Get-FileDateStamp "01/04/2025"
+#         Write-Host "getDateCodeFromDate value is $getDateCodeFromDate"
 
-        $joinBack = $justGameName -join "_"
+#        $getDateObject = Get-FileDateStamp "03312025"
+#        Write-Host "from date code string 03312025 now have value $($getDateObject) of type $($getDateObject.GetType().Name)`n"
 
-        Write-Host "joinBack is $($justGameName -join "_")`n"
-
-        $getDatefromCode = Get-FileDateStamp 01042025
-        Write-Host "getDatefromCode value is $getDatefromCode"
-
-        $getCodeFromdate = Get-FileDateStamp "01/04/2025 00:00:00"
-        Write-Host "getDatefromCode value is $getCodeFromdate"
+#        $getDateObject = Get-FileDateStamp "Outzone_11012024_steam.zip"
+#        Write-Host "from input Outzone_11012024_steam.zip, value return is $($getDateObject)" # of type $($getDateObject.GetType().Name)`n"
+#        $getDateObject = Get-FileDateStamp "P:\Game-Library-Auto-Archiver\GameSource\bit Dungeon"
+#        Write-Host "from input 'P:\Game-Library-Auto-Archiver\GameSource\bit Dungeon', value return is $($getDateObject)" # of type $($getDateObject.GetType().Name)`n"
         
         #
 #        write-host "justSplit is $($justSplit)`n"

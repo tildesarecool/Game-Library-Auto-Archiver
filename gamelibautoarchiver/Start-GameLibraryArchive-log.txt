@@ -1,30 +1,28 @@
 **********************
 PowerShell transcript start
-Start time: 20250408090310
-Username: THINKPEG\keith
-RunAs User: THINKPEG\keith
+Start time: 20250411094756
+Username: GALACTICA\Keith
+RunAs User: GALACTICA\Keith
 Configuration Name: 
-Machine: THINKPEG (Microsoft Windows NT 10.0.26100.0)
-Host Application: C:\Program Files\PowerShell\7\pwsh.dll -command & { .\gamelibautoarchiver.ps1 -sourceFolder "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource" -destinationFolder "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameDest"  }
-Process ID: 23508
+Machine: GALACTICA (Microsoft Windows NT 10.0.19045.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll
+Process ID: 9336
 PSVersion: 7.5.0
 PSEdition: Core
 GitCommitId: 7.5.0
-OS: Microsoft Windows 10.0.26100
+OS: Microsoft Windows 10.0.19045
 Platform: Win32NT
 PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
 PSRemotingProtocolVersion: 2.3
 SerializationVersion: 1.1.0.1
 WSManStackVersion: 3.0
 **********************
-src name list: bit_Dungeon bit_Dungeon_II bit_Dungeon_III Dig_Dog Horizon_Chase Markov_Alg Ms._PAC-MAN Outzone
-and
-namesSplitted is bit Dungeon 11012024 steam
-justGameName is bit Dungeon
-joinBack is bit_Dungeon
+value of seeIfJoinedPath is P:\Game-Library-Auto-Archiver\GameDest\01042025
+value of SeeIfAbsPath is False
+value of ParamLengthValidate is False
+value sent in 01042025, returning date object version...
 getDatefromCode value is 01/04/2025 00:00:00
-getDatefromCode value is
 **********************
 PowerShell transcript end
-End time: 20250408090310
+End time: 20250411094756
 **********************
