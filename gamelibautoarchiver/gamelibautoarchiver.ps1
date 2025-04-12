@@ -316,22 +316,41 @@ function Start-GameLibAutoArchiver {
         # Get their names with underscores for comparison: array of source folder names with _ in place of spaces
         # - should still be FS objects -- just names with underscores, no full paths
         $validatedNamesUnderscored = $nonEmptyFolders.Name | ConvertTo-UnderscoreName
+
+
+
+
+
         #Write-Host "valid underscore list should be $($validatedNamesUnderscored)"
 
         # Get destination files - obviously i need some functions to handle the destination half of this
 #        $destFiles = Get-ChildItem $destinationFolder -File | Select-Object -ExpandProperty BaseName
 
 #        Write-Host "valid list should be $($destFiles)"
+    $DestFileList = Get-DestFileNames
 
-        # Compare
+
+
+    Stop-Transcript | Out-Null
+
+}
+
+Start-GameLibAutoArchiver
+
+    # Compare
         # $FileMatches = $validatedNamesUnderscored | Where-Object { $destFiles -contains $_ }
         
 
         # using the Select-Object -ExpandProperty BaseName in the Get-DestFileNames function does return file names only, no paths
         # but it also cuts off the .zip part of the name, which is probably better for file extension nuetrality in the long run
         # right? as far as i know this array should still be FS objects
-        $DestFileList = Get-DestFileNames
-#        $DestFileList.
+
+
+
+
+
+
+        #        $DestFileList.
         #Write-Host "file name list: $($DestFileList)"
 
         #$FileMatches = $validatedNamesUnderscored | Where-Object {$DestFileList -contains ($_ -split '_',-3)[6] } # ($DestFileList -split '_',-3)[6] 
@@ -364,8 +383,8 @@ function Start-GameLibAutoArchiver {
 # 
 #         Write-Host "joinBack is $($justGameName -join "_")`n"
 # 
-         $getDatefromCode = Get-FileDateStamp 01042025
-         Write-Host "getDatefromCode value is $getDatefromCode"
+#         $getDatefromCode = Get-FileDateStamp 01042025
+#         Write-Host "getDatefromCode value is $getDatefromCode"
 # 
 #         $getDateFromPathFolder = Get-FileDateStamp "P:\Game-Library-Auto-Archiver\GameSource\bit Dungeon III"
 #         Write-Host "getDatefromCode value is $getDateFromPathFolder"
@@ -411,11 +430,9 @@ function Start-GameLibAutoArchiver {
         # Write-Host "a list with underscores is $folderswithUnderscores"
 
     # end of transcript ##################################################
-    Stop-Transcript | Out-Null
 
-}
 
-Start-GameLibAutoArchiver
+
 
 #Export-ModuleMember -Function Start-GameLibraryArchive
 #Export-ModuleMember -Function Main
