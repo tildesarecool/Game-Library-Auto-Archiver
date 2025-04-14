@@ -154,28 +154,81 @@ function Get-FileDateStamp {
     # 
     # so really the function should either take in a zip file name as a string or a 
 
-    param ([Parameter(Mandatory=$true)] [string]$StrToConvert)
+    param ( [Parameter(Mandatory=$true)] 
+    #[string]$StrToConvert
+    #[switch]$StrToConvert
+    $StrToConvert
+    )
 
+    write-host "type of parameter sent in is $($StrToConvert.GetType().Name)"
+
+    if ($StrToConvert -is [Int32]) {Write-Host "came back int32"}
     #$ParamLengthValidate = ( $PreferredDateFormat.Length -eq $StrToConvert.Length )
     #$SeeIfLeaf = Test-Path (Join-Path -Path $sourceFolder -ChildPath $StrToConvert)
 
     #$SeeIfAbsPath = ( (Split-Path -Path $StrToConvert -IsAbsolute) -or (Test-Path $StrToConvert) )
-    $SeeIfAbsPath = Test-Path $StrToConvert
 
-    if (-not $SeeIfAbsPath) {
-        $seeIfJoinedPath = Join-Path -Path $destinationFolder -ChildPath $StrToConvert
-        $JoinedPathMakeAbs = Test-Path $seeIfJoinedPath # splitpath just checks if absolute. doesn't try to determine if the path exists
 
-        if ($JoinedPathMakeAbs) {
-            Write-Host "after join the path is $($seeIfJoinedPath) and whether it's a valid path is $($JoinedPathMakeAbs)"
-            return $seeIfJoinedPath
+#    if ( ( $StrToConvert -is [String]) -or ($StrToConvert -is [Int32]) ) {     # the format ($StrToConvert -is [Int32]) works better than the $StrToConvert.GetType().Name one for if/bools anyway
+    if (  $StrToConvert -is [Int32]  ) { 
+        #[int32]$StrToConvert
+        try {
+            $StrToConvert = "{0:D8}" -f $StrToConvert
+            Write-Host "parameter value after the {0:d8} conversion is $($StrToConvert)"
+            $getIfDateConvertable = [datetime]::ParseExact($StrToConvert, $PreferredDateFormat, $null)
+            Write-Host "`n(inside getfiledatestamp function) Value of getIfDateConvertable is $($getIfDateConvertable) of type $($getIfDateConvertable.GetType().Name)`n"
+            return $getIfDateConvertable
+        } catch {
+            Write-Host "invalid date code"
+            $getIfDateConvertable = $false
+        }
+    } elseif ( ( $StrToConvert -is [String] ) -and ( $StrToConvert.Length -eq 8)  ) { # ($StrToConvert -eq [string]) {
+        try {
+            $getIfDateConvertable = [datetime]::ParseExact($StrToConvert, $PreferredDateFormat, $null)
+            Write-Host "`n(inside second try in getfiledatestamp function) Value of getIfDateConvertable is $($getIfDateConvertable) of type $($getIfDateConvertable.GetType().Name)`n"
+            return $getIfDateConvertable
+        } catch {
+            $getIfDateConvertable = $false
         }
     }
 
-    if ($SeeIfAbsPath) {
-        Write-Host "`nvalue of SeeIfAbsPath is $($SeeIfAbsPath) and passed in value is $($StrToConvert)`n"
-        return $SeeIfAbsPath
+    if ( $StrToConvert -is [DateTime] ) {
+        return $StrToConvert | Get-Date -Format $PreferredDateFormat
     }
+
+
+    #if ($getIfDateConvertable) {
+    #    Write-Host "`n(inside getfiledatestamp function) Value of getIfDateConvertable is $($getIfDateConvertable) of type $($getIfDateConvertable.GetType().Name)`n"
+    #} else {
+    #    Write-Host "`nNot the date stamp`n"
+    #}
+
+    $SeeIfAbsPath = Test-Path $StrToConvert
+
+    if ($SeeIfAbsPath) { # if the parameter is already a path
+        Write-Host "`nvalue of SeeIfAbsPath is $($SeeIfAbsPath) and passed in value is $($StrToConvert)`n"
+        return $SeeIfAbsPath # just return the path, the end
+    }
+
+    if (-not $SeeIfAbsPath) { # if parameter does not come back as a path alrady
+        $seeIfJoinedPath = Join-Path -Path $destinationFolder -ChildPath $StrToConvert # attempt to make into a full path
+        $JoinedPathMakeAbs = Test-Path $seeIfJoinedPath # and test again if it's a path that exists
+
+        if ($JoinedPathMakeAbs) { # if it is now a path
+            Write-Host "after join the path is $($seeIfJoinedPath) and whether it's a valid path is $($JoinedPathMakeAbs)`n"
+            return $seeIfJoinedPath # return the path, the end
+        }
+        else {
+            try {
+                return [datetime]::ParseExact($StrToConvert, $PreferredDateFormat, $null)
+            }
+            catch {
+                Write-Warning "value $($StrToConvert) not a valid date code`n"
+                return $false
+            }
+        }
+    }
+
 
     Write-Host "value of seeIfJoinedPath is $($seeIfJoinedPath )`n"
     Write-Host "value of SeeIfAbsPath is $($SeeIfAbsPath)`n"
@@ -183,15 +236,15 @@ function Get-FileDateStamp {
 
     #$ParamLengthValidate = ( ($PreferredDateFormat.Length -eq $StrToConvert.Length) -and -not (Test-Path $StrToConvert ) -and -not ($SeeIfLeaf) )
 
-    $ParamLengthValidate = ( $SeeIfAbsPath )#-or $testJoinedPath)
-
-    Write-Host "value of ParamLengthValidate is $($ParamLengthValidate)" # returns True or false
-
-    if (-not $ParamLengthValidate) {
-        Write-Host "value sent in $($StrToConvert), returning date object version...`n" # converted to date object
-        # now return date and exit function
-        return [datetime]::ParseExact($StrToConvert, $PreferredDateFormat, $null)
-    }
+#    $ParamLengthValidate = ( $SeeIfAbsPath )#-or $testJoinedPath)
+#
+#    Write-Host "value of ParamLengthValidate is $($ParamLengthValidate)" # returns True or false
+#
+#    if (-not $ParamLengthValidate) {
+#        Write-Host "value sent in $($StrToConvert), returning date object version...`n" # converted to date object
+#        # now return date and exit function
+#        return [datetime]::ParseExact($StrToConvert, $PreferredDateFormat, $null)
+#    }
 
 #    if (($PreferredDateFormat.Length -eq $StrToConvert.Length) -and -not (Test-Path $StrToConvert)) {
 
@@ -329,6 +382,28 @@ function Start-GameLibAutoArchiver {
 #        Write-Host "valid list should be $($destFiles)"
     $DestFileList = Get-DestFileNames
 
+#         $getDatefromCode = Get-FileDateStamp 01042025
+#         Write-Host "getDatefromCode value is $getDatefromCode"
+# 
+#         $getDateFromPathFolder = Get-FileDateStamp "P:\Game-Library-Auto-Archiver\GameSource\bit Dungeon III"
+#         Write-Host "getDatefromCode value is $getDateFromPathFolder"
+# 
+#         $getDateCodeFromDate = Get-FileDateStamp "01/04/2025"
+#         Write-Host "getDateCodeFromDate value is $getDateCodeFromDate"
+
+        $getDateObject = Get-FileDateStamp "03312025"
+        Write-Host "(inside Start-GameLibAutoArchiver function) from date code string 03312025 now have value $($getDateObject) of type $($getDateObject.GetType()) `n"
+        $ConvertDateObjToCode = Get-FileDateStamp $getDateObject
+        Write-Host "ConvertDateObjToCode value return is $($ConvertDateObjToCode)"
+
+#        if ($($getDateObject.GetType().Name) -eq ([datetime]) ) {
+#            Write-Host "date time return is true" # came back true
+#        } else { "did not come back true" }
+
+#        $getDateObject = Get-FileDateStamp "Outzone_11012024_steam.zip"
+#        Write-Host "from input Outzone_11012024_steam.zip, value return is $($getDateObject)" # of type $($getDateObject.GetType().Name)`n"
+#        $getDateObject = Get-FileDateStamp "P:\Game-Library-Auto-Archiver\GameSource\bit Dungeon"
+#        Write-Host "from input 'P:\Game-Library-Auto-Archiver\GameSource\bit Dungeon', value return is $($getDateObject)" # of type $($getDateObject.GetType().Name)`n"    
 
 
     Stop-Transcript | Out-Null
@@ -383,22 +458,6 @@ Start-GameLibAutoArchiver
 # 
 #         Write-Host "joinBack is $($justGameName -join "_")`n"
 # 
-#         $getDatefromCode = Get-FileDateStamp 01042025
-#         Write-Host "getDatefromCode value is $getDatefromCode"
-# 
-#         $getDateFromPathFolder = Get-FileDateStamp "P:\Game-Library-Auto-Archiver\GameSource\bit Dungeon III"
-#         Write-Host "getDatefromCode value is $getDateFromPathFolder"
-# 
-#         $getDateCodeFromDate = Get-FileDateStamp "01/04/2025"
-#         Write-Host "getDateCodeFromDate value is $getDateCodeFromDate"
-
-#        $getDateObject = Get-FileDateStamp "03312025"
-#        Write-Host "from date code string 03312025 now have value $($getDateObject) of type $($getDateObject.GetType().Name)`n"
-
-#        $getDateObject = Get-FileDateStamp "Outzone_11012024_steam.zip"
-#        Write-Host "from input Outzone_11012024_steam.zip, value return is $($getDateObject)" # of type $($getDateObject.GetType().Name)`n"
-#        $getDateObject = Get-FileDateStamp "P:\Game-Library-Auto-Archiver\GameSource\bit Dungeon"
-#        Write-Host "from input 'P:\Game-Library-Auto-Archiver\GameSource\bit Dungeon', value return is $($getDateObject)" # of type $($getDateObject.GetType().Name)`n"
         
         #
 #        write-host "justSplit is $($justSplit)`n"

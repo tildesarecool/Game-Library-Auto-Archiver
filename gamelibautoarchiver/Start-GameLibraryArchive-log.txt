@@ -1,12 +1,12 @@
 **********************
 PowerShell transcript start
-Start time: 20250411094756
+Start time: 20250413152203
 Username: GALACTICA\Keith
 RunAs User: GALACTICA\Keith
 Configuration Name: 
 Machine: GALACTICA (Microsoft Windows NT 10.0.19045.0)
 Host Application: C:\Program Files\PowerShell\7\pwsh.dll
-Process ID: 9336
+Process ID: 32660
 PSVersion: 7.5.0
 PSEdition: Core
 GitCommitId: 7.5.0
@@ -17,12 +17,13 @@ PSRemotingProtocolVersion: 2.3
 SerializationVersion: 1.1.0.1
 WSManStackVersion: 3.0
 **********************
-value of seeIfJoinedPath is P:\Game-Library-Auto-Archiver\GameDest\01042025
-value of SeeIfAbsPath is False
-value of ParamLengthValidate is False
-value sent in 01042025, returning date object version...
-getDatefromCode value is 01/04/2025 00:00:00
+type of parameter sent in is String
+
+(inside second try in getfiledatestamp function) Value of getIfDateConvertable is 03/31/2025 00:00:00 of type DateTime
+(inside Start-GameLibAutoArchiver function) from date code string 03312025 now have value 03/31/2025 00:00:00 of type datetime
+type of parameter sent in is DateTime
+ConvertDateObjToCode value return is 03312025
 **********************
 PowerShell transcript end
-End time: 20250411094756
+End time: 20250413152203
 **********************
