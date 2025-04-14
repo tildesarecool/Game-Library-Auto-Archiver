@@ -347,9 +347,6 @@ function Get-FolderSizeKB {
 }
 
 
-
-
-
 function Start-GameLibAutoArchiver {
 
     # startt of transcript ##################################################
