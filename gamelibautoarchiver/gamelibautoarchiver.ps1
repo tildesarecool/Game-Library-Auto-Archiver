@@ -155,21 +155,43 @@ function Set-SrcPathObject {
 }
 
 function Set-DestPathObject {
-    ExtractedFileNameDate = @()
+    $ExtractedFileNameDate = @()
+
+#    $GetFilePath = Get-ChildItem -Path $destinationFolder -File Outzone_11012024_steam.zip
+#    $fileBasename = $GetFilePath.BaseName    
+#    $fileSplit = $fileBasename -split "_"    
+#    $DateCodeFromFile = $fileSplit[-2].Trim()
+#    
+#    Write-Host "value of `$fileBasename is $fileBasename`n"  -ForegroundColor Green
+#    Write-Host "value of `$fileSplit is $fileSplit`n"  -ForegroundColor Green
+#    Write-Host "value of `$DateCodeFromFile is $DateCodeFromFile and is of type $($DateCodeFromFile.GetType().Name)`n"  -ForegroundColor Green
+#    Write-Host "now attempting to send date into GetFileDate...`n"
+#    $finalDateCode = Get-FileDateStamp $DateCodeFromFile
+#    Write-Host "value of `$finalDateCode is $finalDateCode`n"  -ForegroundColor Green
+
+
     Get-ChildItem -Path $destinationFolder -File | ForEach-Object {
-        $DestFileName = $_.BaseName # should be a file name, like Outzone_11012024_steam
+        $fileBasename = $_.BaseName # should be a file name, like Outzone_11012024_steam
+        Write-Host "value of `$fileBasename is $fileBasename`n"  -ForegroundColor Green
+        $FileSplit = $fileBasename -split "_" # break file name into pieces based on _, like Outzone 11012024 steam
+        Write-Host "value of `$fileSplit is $fileSplit`n"  -ForegroundColor Green
+        $DateCodeFromFile = $FileSplit[-2].Trim()
+        Write-Host "value of `$DateCodeFromFile is $DateCodeFromFile and is of type $($DateCodeFromFile.GetType().Name)`n"  -ForegroundColor Blue
 
-        $FileSplit = $DestFileName -split "_" # break file name into pieces based on _, like Outzone 11012024 steam
+        Write-Host "now attempting to send date into GetFileDate...`n"
+        $finalDateCode = Get-FileDateStamp $DateCodeFromFile
+        Write-Host "value of `$finalDateCode is $finalDateCode`n"  -ForegroundColor Magenta 
 
-        $GetFileDate = $FileSplit[-2] # second item from the end, hopefully just the 11012024 part
-        Write-Host "inside Set-DestPathObject, getfiledate is $getfiledate and is of type $($getfiledate.GetType().Name)"  -ForegroundColor Magenta
-        #$ExtractedFileNameDate += Get-FileDateStamp $GetFileDate # send 11012024 into Get-FileDateStamp to hpefully get a data object
-        $ExtractedFileNameDate += $GetFileDate
+        $ExtractedFileNameDate += $finalDateCode
 
+# 
+#         $GetFileDate = $FileSplit[-2] # second item from the end, hopefully just the 11012024 part
+#         Write-Host "inside Set-DestPathObject, getfiledate is $getfiledate and is of type $($getfiledate.GetType().Name)"  -ForegroundColor Magenta
+#         #$ExtractedFileNameDate += Get-FileDateStamp $GetFileDate # send 11012024 into Get-FileDateStamp to hpefully get a data object
+#         $ExtractedFileNameDate += $GetFileDate
+# 
     }
 
-    
-    
     # for debugging at least return whatever $ExtractedFileNameDate is
     return $ExtractedFileNameDate
 }
@@ -344,7 +366,7 @@ function Start-GameLibAutoArchiver {
         #$FilenameSplit = @()
 
         # Get validated non-empty folders: array with full paths, as FS objects
-        $nonEmptyFolders = Get-NonEmptySourceFolders
+        #$nonEmptyFolders = Get-NonEmptySourceFolders
 
 #        Write-Host "valid list should be $($nonEmptyFolders)"
 
@@ -363,7 +385,7 @@ function Start-GameLibAutoArchiver {
     #see dates from file names
     $datesFromFilenames = Set-DestPathObject
 
-    #$datesFromFilenames | Format-Table -AutoSize
+    $datesFromFilenames | Format-Table -AutoSize
 
 #    $DisplayCustomeSrcObj = Set-SrcPathObject 
 #

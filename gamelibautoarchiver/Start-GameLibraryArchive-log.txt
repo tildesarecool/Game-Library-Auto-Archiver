@@ -1,6 +1,6 @@
 **********************
 PowerShell transcript start
-Start time: 20250420164920
+Start time: 20250421120934
 Username: GALACTICA\Keith
 RunAs User: GALACTICA\Keith
 Configuration Name: 
@@ -17,28 +17,83 @@ PSRemotingProtocolVersion: 2.3
 SerializationVersion: 1.1.0.1
 WSManStackVersion: 3.0
 **********************
-ExtractedFileNameDate: C:\Users\Keith\Documents\repos\Game-Library-Auto-Archiver\gamelibautoarchiver\gamelibautoarchiver.ps1:158
-Line |
- 158 |      ExtractedFileNameDate = @()
-     |      ~~~~~~~~~~~~~~~~~~~~~
-     | The term 'ExtractedFileNameDate' is not recognized as a name of a cmdlet, function, script file, or executable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
-ExtractedFileNameDate: C:\Users\Keith\Documents\repos\Game-Library-Auto-Archiver\gamelibautoarchiver\gamelibautoarchiver.ps1:158
-Line |
- 158 |      ExtractedFileNameDate = @()
-     |      ~~~~~~~~~~~~~~~~~~~~~
-     | The term 'ExtractedFileNameDate' is not recognized as a name of a cmdlet, function, script file, or
-     | executable program. Check the spelling of the name, or if a path was included, verify that the path is
-     | correct and try again.
+value of $fileBasename is bit_Dungeon_11012024_steam
+value of $fileSplit is bit Dungeon 11012024 steam
+value of $DateCodeFromFile is 11012024 and is of type String
+now attempting to send date into GetFileDate...
+inside the {0:d8} try, StrToConvert is 11012024
 
-inside Set-DestPathObject, getfiledate is 11012024 and is of type String
-inside Set-DestPathObject, getfiledate is 11012024 and is of type String
-inside Set-DestPathObject, getfiledate is 11012024 and is of type String
-inside Set-DestPathObject, getfiledate is 11012025 and is of type String
-inside Set-DestPathObject, getfiledate is 12152024 and is of type String
-inside Set-DestPathObject, getfiledate is 12212024 and is of type String
-inside Set-DestPathObject, getfiledate is 11012024 and is of type String
-inside Set-DestPathObject, getfiledate is 07062025 and is of type String
+(inside getfiledatestamp function) Value of getIfDateConvertable is 11/01/2024 00:00:00 of type DateTime
+value of $finalDateCode is 11/01/2024 00:00:00
+value of $fileBasename is bit_Dungeon_II_11012024_steam
+value of $fileSplit is bit Dungeon II 11012024 steam
+value of $DateCodeFromFile is 11012024 and is of type String
+now attempting to send date into GetFileDate...
+inside the {0:d8} try, StrToConvert is 11012024
+
+(inside getfiledatestamp function) Value of getIfDateConvertable is 11/01/2024 00:00:00 of type DateTime
+value of $finalDateCode is 11/01/2024 00:00:00
+value of $fileBasename is bit_Dungeon_III_11012024_steam
+value of $fileSplit is bit Dungeon III 11012024 steam
+value of $DateCodeFromFile is 11012024 and is of type String
+now attempting to send date into GetFileDate...
+inside the {0:d8} try, StrToConvert is 11012024
+
+(inside getfiledatestamp function) Value of getIfDateConvertable is 11/01/2024 00:00:00 of type DateTime
+value of $finalDateCode is 11/01/2024 00:00:00
+value of $fileBasename is Dig_Dog_11012025_steam
+value of $fileSplit is Dig Dog 11012025 steam
+value of $DateCodeFromFile is 11012025 and is of type String
+now attempting to send date into GetFileDate...
+inside the {0:d8} try, StrToConvert is 11012025
+
+(inside getfiledatestamp function) Value of getIfDateConvertable is 11/01/2025 00:00:00 of type DateTime
+value of $finalDateCode is 11/01/2025 00:00:00
+value of $fileBasename is Horizon_Chase_12152024_steam
+value of $fileSplit is Horizon Chase 12152024 steam
+value of $DateCodeFromFile is 12152024 and is of type String
+now attempting to send date into GetFileDate...
+inside the {0:d8} try, StrToConvert is 12152024
+
+(inside getfiledatestamp function) Value of getIfDateConvertable is 12/15/2024 00:00:00 of type DateTime
+value of $finalDateCode is 12/15/2024 00:00:00
+value of $fileBasename is Markov_Alg_12212024_steam
+value of $fileSplit is Markov Alg 12212024 steam
+value of $DateCodeFromFile is 12212024 and is of type String
+now attempting to send date into GetFileDate...
+inside the {0:d8} try, StrToConvert is 12212024
+
+(inside getfiledatestamp function) Value of getIfDateConvertable is 12/21/2024 00:00:00 of type DateTime
+value of $finalDateCode is 12/21/2024 00:00:00
+value of $fileBasename is Outzone_11012024_steam
+value of $fileSplit is Outzone 11012024 steam
+value of $DateCodeFromFile is 11012024 and is of type String
+now attempting to send date into GetFileDate...
+inside the {0:d8} try, StrToConvert is 11012024
+
+(inside getfiledatestamp function) Value of getIfDateConvertable is 11/01/2024 00:00:00 of type DateTime
+value of $finalDateCode is 11/01/2024 00:00:00
+value of $fileBasename is PAC-MAN_07062025_steam
+value of $fileSplit is PAC-MAN 07062025 steam
+value of $DateCodeFromFile is 07062025 and is of type String
+now attempting to send date into GetFileDate...
+inside the {0:d8} try, StrToConvert is 07062025
+
+(inside getfiledatestamp function) Value of getIfDateConvertable is 07/06/2025 00:00:00 of type DateTime
+value of $finalDateCode is 07/06/2025 00:00:00
+
+Date                Day DayOfWeek DayOfYear Hour        Kind Millisecond Microsecond Nanosecond Minute
+----                --- --------- --------- ----        ---- ----------- ----------- ---------- ------
+11/1/2024 00:00:00    1    Friday       306    0 Unspecified           0           0          0      0
+11/1/2024 00:00:00    1    Friday       306    0 Unspecified           0           0          0      0
+11/1/2024 00:00:00    1    Friday       306    0 Unspecified           0           0          0      0
+11/1/2025 00:00:00    1  Saturday       305    0 Unspecified           0           0          0      0
+12/15/2024 00:00:00  15    Sunday       350    0 Unspecified           0           0          0      0
+12/21/2024 00:00:00  21  Saturday       356    0 Unspecified           0           0          0      0
+11/1/2024 00:00:00    1    Friday       306    0 Unspecified           0           0          0      0
+7/6/2025 00:00:00     6    Sunday       187    0 Unspecified           0           0          0      0
+
 **********************
 PowerShell transcript end
-End time: 20250420164921
+End time: 20250421120934
 **********************
