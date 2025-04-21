@@ -8,6 +8,7 @@ This module scans a game library directory and archives each game's folder into 
 
 **A long winded a way of saying this script is on hold while I 're-assess my options.'**
 
+**Update April 14th 2025: I've made some decisions on the script. Not very exciting, just going to develop as I was before but limit the games that are zipped to the ones under 2 Gigabytes. Then probably have a replacable part of the script for several different solutions for anything over 2 Gigabytes.**
 
 ## Features  
 - 📂 **Automated Archiving** – Compress game library folders into archives with platform and date metadata.  
