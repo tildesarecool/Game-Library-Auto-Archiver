@@ -21,7 +21,7 @@
 # Note: I've recently learned that zip files created with compress-archive have a file size limit of 2GB, which I was not aware of. The only work arounds as far as I can tell is to either auto-create ~2 gig zip files of folders larger than this or to use a third party utility like 7zip. I don't have any interest in splitting a 110 gigabyte folder into many 2 gigabyte zip files. Actually the default zip file size limit is 4 gigaybtes anyway. Apparently compress-archive doesn't do zip64 which has no such file size limits. I actually thought of my own alternative as well which I'm still assessing.
 # 
 # A long winded a way of saying this script is on hold while I 're-assess my options.'
-
+# CmdletBinding: Adds support for -Verbose and -Debug (run with Set-DestPathObject -Verbose).
 [CmdletBinding(DefaultParameterSetName="Manual", SupportsShouldProcess=$true)]
 <# 
 .SYNOPSIS
@@ -116,6 +116,10 @@ $global:logBaseName = "Start-GameLibraryArchive-log.txt"
 
 
 function Set-SrcPathObject {
+# CmdletBinding: Adds support for -Verbose and -Debug (run with Set-SrcPathObject -Verbose).
+    [CmdletBinding()]
+    param()
+# (optional, used with params)
 # despite the lack of a return keyword here, assigning a variable to
 # Set-SrcPathObject results in an array data type
 # so from $DisplayCustomeSrcObj = Set-SrcPathObject 
@@ -123,77 +127,82 @@ function Set-SrcPathObject {
 # this alien to me as a concept but i'm learning
 # i added in the extra lines that would make it look more like what i expect
 # but i left them commented out
+# possible idea for later: parameter to return pscustom object of folders left of out of ps custom object (e.g. under 50KB)?
 
 ########## $results = @()
-    Get-ChildItem -Path $sourceFolder -Directory | ForEach-Object {
-        $folderpath = $_.FullName
+    Get-ChildItem -Path $sourceFolder -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+#        $folderpath = $_.FullName
 #        Write-Host "value of `$_.FullName is $($_.FullName)"
+        $folderName = $_.BaseName
+        #Write-Verbose "Processing folder: $FolderName"
+
+        $IsOver50KB = Get-FolderSizeKB -FolderPath $FolderName -Verbose
+        #Write-Verbose "Folder $FolderName size over 50 KB: $IsOver50KB"
 
         # check folder size
-        if (Get-FolderSizeKB -folderPath $folderpath) {
-            $folderName = $_.BaseName
-#            Write-Host "value of `$_.BaseName is $($_.BaseName)"
-            $lastwritedate = $_.LastWriteTime
-#            Write-Host "value of `$_.LastWriteTime is $($_.LastWriteTime)"
-            # generate hypothetical name
-            $underscorename = ConvertTo-UnderscoreName -Name $folderName
-            $datecode = $lastwritedate | Get-Date -Format $PreferredDateFormat
-            $platform = Get-PlatformShortName
-            $hypotheticalName = "$($underscorename)_$($datecode)_$($platform)"
-#            Write-Host "value of hypotheticalName is $hypotheticalName"
-            # create pscustomobject
+#        if (Get-FolderSizeKB -folderPath $folderpath) {
+            
+#       Write-Host "value of `$_.BaseName is $($_.BaseName)"
+        $lastwritedate = $_.LastWriteTime
+#       Write-Host "value of `$_.LastWriteTime is $($_.LastWriteTime)"
+        # generate hypothetical name
+        $underscorename = ConvertTo-UnderscoreName -Name $folderName
+        $datecode = $lastwritedate | Get-Date -Format $PreferredDateFormat
+        $platform = Get-PlatformShortName
+        $HypotheticalName = "$UnderscoreName`_$DateCode`_$Platform"
+#        Write-Host "value of hypotheticalName is $hypotheticalName"
+        # create pscustomobject
 ########## results += [PSCustomObject]@{
             [PSCustomObject]@{
                 FolderName = $folderName
-                LastWriteDate = $lastwritedate
-                HypotheticalName = $hypotheticalName
+                UnderScoreName   = $underscorename
+                Platform         = $platform
+                LastWriteDate    = $lastwritedate
+                HypotheticalName = $HypotheticalName
+                IsOver50KB       = $IsOver50KB
             }
-        } 
+#        } # end of if (Get-FolderSizeKB -folderPath $folderpath)
     }     
 ########## return results
-          
+
 }
 
 function Set-DestPathObject {
-    $ExtractedFileNameDate = @()
-
-#    $GetFilePath = Get-ChildItem -Path $destinationFolder -File Outzone_11012024_steam.zip
-#    $fileBasename = $GetFilePath.BaseName    
-#    $fileSplit = $fileBasename -split "_"    
-#    $DateCodeFromFile = $fileSplit[-2].Trim()
-#    
-#    Write-Host "value of `$fileBasename is $fileBasename`n"  -ForegroundColor Green
-#    Write-Host "value of `$fileSplit is $fileSplit`n"  -ForegroundColor Green
-#    Write-Host "value of `$DateCodeFromFile is $DateCodeFromFile and is of type $($DateCodeFromFile.GetType().Name)`n"  -ForegroundColor Green
-#    Write-Host "now attempting to send date into GetFileDate...`n"
-#    $finalDateCode = Get-FileDateStamp $DateCodeFromFile
-#    Write-Host "value of `$finalDateCode is $finalDateCode`n"  -ForegroundColor Green
-
-
-    Get-ChildItem -Path $destinationFolder -File | ForEach-Object {
+    [CmdletBinding()]
+    param()
+#    $ExtractedFileNameDate = @()
+    Get-ChildItem -Path $destinationFolder -File -ErrorAction SilentlyContinue | ForEach-Object {
         $fileBasename = $_.BaseName # should be a file name, like Outzone_11012024_steam
-        Write-Host "value of `$fileBasename is $fileBasename`n"  -ForegroundColor Green
+#        Write-Host "value of `$fileBasename is $fileBasename`n"  -ForegroundColor Green
         $FileSplit = $fileBasename -split "_" # break file name into pieces based on _, like Outzone 11012024 steam
-        Write-Host "value of `$fileSplit is $fileSplit`n"  -ForegroundColor Green
+#        Write-Host "value of `$fileSplit is $fileSplit`n"  -ForegroundColor Green
         $DateCodeFromFile = $FileSplit[-2].Trim()
-        Write-Host "value of `$DateCodeFromFile is $DateCodeFromFile and is of type $($DateCodeFromFile.GetType().Name)`n"  -ForegroundColor Blue
+#        Write-Host "value of `$DateCodeFromFile is $DateCodeFromFile and is of type $($DateCodeFromFile.GetType().Name)`n"  -ForegroundColor Blue
+#        Write-Host "now attempting to send date into GetFileDate...`n"
 
-        Write-Host "now attempting to send date into GetFileDate...`n"
+        $platform = ($fileBasename -split "_")[-1]
+
+        try {
         $finalDateCode = Get-FileDateStamp $DateCodeFromFile
-        Write-Host "value of `$finalDateCode is $finalDateCode`n"  -ForegroundColor Magenta 
+#        Write-Host "value of `$finalDateCode is $finalDateCode`n"  -ForegroundColor Magenta 
+        } 
+        catch {
+            Write-Verbose "Invalid date code in $FileBaseName`: $_"
+            return
+        }
 
-        $ExtractedFileNameDate += $finalDateCode
+        $underscoreName = ($fileSplit[0..($fileSplit.Count - 3)] -join "_")
 
-# 
-#         $GetFileDate = $FileSplit[-2] # second item from the end, hopefully just the 11012024 part
-#         Write-Host "inside Set-DestPathObject, getfiledate is $getfiledate and is of type $($getfiledate.GetType().Name)"  -ForegroundColor Magenta
-#         #$ExtractedFileNameDate += Get-FileDateStamp $GetFileDate # send 11012024 into Get-FileDateStamp to hpefully get a data object
-#         $ExtractedFileNameDate += $GetFileDate
-# 
+
+        [PSCustomObject]@{
+            FileName = $fileBasename
+            UnderScoreName = $underscoreName
+            LastWriteDate  = $finalDateCode
+            Platform       = $platform
+        }
     }
-
     # for debugging at least return whatever $ExtractedFileNameDate is
-    return $ExtractedFileNameDate
+    #return $ExtractedFileNameDate
 }
 
 
@@ -253,25 +262,25 @@ function Get-FileDateStamp {
         } elseif ($StrToConvert -is [string]) {
             $StrToConvert = $StrToConvert.PadLeft(8,'0')
         }
-        Write-Host "inside the {0:d8} try, StrToConvert is $($StrToConvert)"
+#        Write-Host "inside the {0:d8} try, StrToConvert is $($StrToConvert)"
         $getIfDateConvertable = [datetime]::ParseExact($StrToConvert, $PreferredDateFormat, $null)
-        Write-Host "`n(inside getfiledatestamp function) Value of getIfDateConvertable is $($getIfDateConvertable) of type $($getIfDateConvertable.GetType().Name)`n"
+#        Write-Host "`n(inside getfiledatestamp function) Value of getIfDateConvertable is $($getIfDateConvertable) of type $($getIfDateConvertable.GetType().Name)`n"
         return $getIfDateConvertable
     } catch {
-        Write-Host "'$StrToConvert' is not a valid MMddyyyy date code."
+#        Write-Host "'$StrToConvert' is not a valid MMddyyyy date code."
         $getIfDateConvertable = $false
     }
     #-----------------------------------------------------------------------------
 
     #$SeeIfAbsPath = ( (Test-Path $StrToConvert) -and ((Get-Item $StrToConvert).PSIsContainer ) )
     $SeeIfAbsPath =  (Test-Path -Path $StrToConvert -PathType Container -ErrorAction SilentlyContinue) #-and ((Get-Item $StrToConvert).PSIsContainer ) 
-    Write-Host "SeeIfAbsPath value from the test of  ( (Test-Path `$StrToConvert) -and ((Get-Item `$StrToConvert).PSIsContainer ) ) is $($SeeIfAbsPath)"
+#    Write-Host "SeeIfAbsPath value from the test of  ( (Test-Path `$StrToConvert) -and ((Get-Item `$StrToConvert).PSIsContainer ) ) is $($SeeIfAbsPath)"
 
     if ( $SeeIfAbsPath   ) { # if the parameter is already a path
         #$GetIsContain = Get-Item $StrToConvert
         #if ($GetIsContain -and $GetIsContain.PSIsContainer) {
-            Write-Host "`n.....if seeing this then `"$($StrToConvert)`" both exists as a path and is a folder`n"
-            Write-Host "attempting to return last write time of StrToConvert, value is $(( Get-Item $StrToConvert).LastWriteTime)`n" -ForegroundColor Green
+#            Write-Host "`n.....if seeing this then `"$($StrToConvert)`" both exists as a path and is a folder`n"
+#            Write-Host "attempting to return last write time of StrToConvert, value is $(( Get-Item $StrToConvert).LastWriteTime)`n" -ForegroundColor Green
             #return $StrToConvert # just return the path, the end
             return (Get-Item $StrToConvert).LastWriteTime
         #}
@@ -281,11 +290,11 @@ function Get-FileDateStamp {
         $seeIfJoinedPath = Join-Path -Path $sourceFolder -ChildPath $StrToConvert # attempt to make into a full path
         $JoinedPathMakeAbs = (Test-Path -Path $seeIfJoinedPath -PathType Container -ErrorAction SilentlyContinue)  # -and ((Get-Item $seeIfJoinedPath).PSIsContainer ) )
 
-        Write-Host "value of seeIfJoinedPath is $seeIfJoinedPath and `$JoinedPathMakeAbs is $($JoinedPathMakeAbs)`n"
-        Write-Host "data type of $seeIfJoinedPath is $($seeIfJoinedPath.GetType().Name)"
+#        Write-Host "value of seeIfJoinedPath is $seeIfJoinedPath and `$JoinedPathMakeAbs is $($JoinedPathMakeAbs)`n"
+#        Write-Host "data type of $seeIfJoinedPath is $($seeIfJoinedPath.GetType().Name)"
 
         if ($JoinedPathMakeAbs) { # if it is now a path
-            Write-Host "after join the path is $($seeIfJoinedPath) and whether it's a valid path is $($JoinedPathMakeAbs)`n"
+#            Write-Host "after join the path is $($seeIfJoinedPath) and whether it's a valid path is $($JoinedPathMakeAbs)`n"
             return (Get-Item $seeIfJoinedPath).LastWriteTime # return the path, the end
         }
         else {
@@ -294,7 +303,7 @@ function Get-FileDateStamp {
     } 
     
     # All tests failed
-    Write-Host "'$StrToConvert' is neither a valid folder path, folder name, nor MMddyyyy date code."
+#    Write-Host "'$StrToConvert' is neither a valid folder path, folder name, nor MMddyyyy date code."
     return $null
 }
 
@@ -331,27 +340,139 @@ function ConvertTo-UnderscoreName {
 }
 
 function Get-FolderSizeKB {
-#    [CmdletBinding()]
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
         $folderPath, # left untyped on purpose. so that folderPath can be either a string or a [System.IO.DirectoryInfo] type
-        [int]$sizeLimitKB = 50
+        [int]$sizeLimitKB = $global:sizeLimitKB
     )
+
+    $potentialPath = $null
     
+    if (Test-Path $folderPath -PathType Container) {
+        $resolvedPath = $folderPath
+#        Write-Verbose "Using provided path: $resolvedPath"            
+    } else {
+        $folderName = if ($folderPath -is [System.IO.DirectoryInfo]) { $folderPath.Name } else { [string]$folderPath }
+        $potentialPath = Join-Path -Path $sourceFolder -ChildPath $folderName # childPath parameter only takes string types
+        if (Test-Path -Path $potentialPath -PathType Container) {
+            $resolvedPath = $potentialPath
+#            Write-Verbose "Using constructed path: $resolvedPath"
+        }
+    }
+
+    if (-not $resolvedPath) {
+        Write-Verbose "Invalid path: $folderPath (and not found under `$sourceFolder)"
+        return $false
+    }    
+
+
     $FolderSizeKBTracker = 0
-    foreach ($file in Get-ChildItem -Path $folderPath -Recurse -File -ErrorAction SilentlyContinue -ErrorVariable err) {
+#    foreach ($file in Get-ChildItem -Path $folderPath -Recurse -File -ErrorAction SilentlyContinue -ErrorVariable err) {
+    foreach ($file in Get-ChildItem -Path $resolvedPath -Recurse -File -ErrorAction SilentlyContinue -ErrorVariable err) {
         $FolderSizeKBTracker += $file.Length / 1KB
         if ($FolderSizeKBTracker -gt $sizeLimitKB) {
+ #           Write-Verbose "Folder $resolvedPath size: $FolderSizeKBTracker KB, exceeds $sizeLimitKB KB"
             return $true
         }
     }
     
     if ($err) { Write-Debug "Errors during enumeration: $($err | Out-String)" }
+#    Write-Verbose "Folder $resolvedPath size: $FolderSizeKBTracker KB, does not exceed $sizeLimitKB KB"
     return $false
 }
 
+function Get-FoldersToArchive {
+    [CmdletBinding()]
+    param (
+#        [Parameter(Mandatory = $true)]
+#        [PSCustomObject[]]$SourceObjects#,
+#        [Parameter(Mandatory = $true)]
+#        [string]$DestinationFolder
+    )
 
+    #$destFiles = Set-DestPathObject $DisplayCustomeDstObj #| Select-Object -Property FileName 
+    $DisplayCustomeDstObj = Set-DestPathObject #| Select-Object -Property FileName 
+    $SourceObjects = Set-SrcPathObject
 
+    $results = @()
+    foreach ($src in $SourceObjects) {
+#        Write-Verbose "Processing source folder: $($src.FolderName)"
+
+        $folderName = $src.FolderName
+        $hypotheticalName = $src.HypotheticalName
+        $underscoreName= $src.UnderScoreName
+        $lastWriteDate = $src.LastWriteDate
+        $isOver50KB = $src.IsOver50KB
+        $archiveStatus = "NeedsArchive"
+        $matchingFiles = @()
+
+        # Skip folders under 50 KB
+        # Step 1: Check if folder is excluded (< 50 KB)
+        if (-not $IsOver50KB) { 
+#            Write-Verbose "Folder $($src.FolderName) excluded (size < 50 KB)"
+#            Write-Host "value of `$src is $src and kb status is $($src.IsOver50KB)" -ForegroundColor Green
+            $archiveStatus = "Excluded"
+            $results += [PSCustomObject]@{
+                FolderName      = $FolderName
+                HypotheticalName = $HypotheticalName
+                LastWriteDate   = $LastWriteDate
+                IsOver50KB      = $IsOver50KB
+                ArchiveStatus   = $archiveStatus
+                MatchingFiles    = $matchingFiles
+            }
+            continue
+        }
+        #}
+        #return $results # for testing up to above foreach loop, shouldn't be required when function is finished
+
+        #$platform = ($hypotheticalName -split "_")[-1]
+        # Step 2: Extract platform from HypotheticalName
+        $platform = Get-PlatformShortName
+
+        # Step 3: Check for exact matches (up-to-date archive)
+        $matchingArchives = $DisplayCustomeDstObj | Where-Object { $_.FileName -eq $hypotheticalName }
+
+        if ($matchingArchives) {
+            $archiveStatus = "AlreadyArchived"
+            $matchingFiles = @($matchingArchives.FileName)
+        } else {
+            # Step 4: Check for related archives (older or future-dated)
+            $relatedArchives = $DisplayCustomeDstObj | Where-Object {
+                $_.UnderScoreName -eq $underscoreName -and
+                $_.FileName -like "*_${platform}" #-and
+#                $_.LastWriteDate -lt $lastWriteDate
+            }
+
+            if ($relatedArchives) {
+                $olderArchives = $relatedArchives | Where-Object { $_.LastWriteDate -lt $lastWriteDate }
+                $futureArchives = $relatedArchives | Where-Object { $_.LastWriteDate -gt $lastWriteDate }
+
+                $matchingFiles = @($relatedArchives.FileName)
+
+                if ($futureArchives) {
+                    $warnings += "Future-dated archives detected`: $($futureArchives.FileName -join ', ')"
+                }
+            }
+        }
+
+        # Step 5: Add result to output
+        $results += [PSCustomObject]@{
+            FolderName       = $folderName
+            HypotheticalName = $hypotheticalName
+            LastWriteDate    = $LastWriteDate
+            IsOver50KB       = $IsOver50KB
+            ArchiveStatus    = $archiveStatus
+            MatchingFiles    = $matchingFiles
+            Warnings         = $warnings
+            NeedsArchiving   = $archiveStatus -eq "NeedsArchive"
+
+        }
+    } # end foreach loop
+
+    return $results
+    
+} # end of Get-FoldersToArchive
 
 
 function Start-GameLibAutoArchiver {
@@ -362,6 +483,55 @@ function Start-GameLibAutoArchiver {
 
         Validate-ScriptParameters
         Validate-SourcePathPopulation
+ 
+        # $SizeOfTest = Get-FolderSizeKB "Outzone"
+        # Write-Host "value of SizeOfTest is $SizeOfTest"
+#        $datesFromFilenames = Set-DestPathObject
+#
+##        $finalDateCode = $datesFromFilenames | Get-FolderSizeKB
+#
+#        $datesFromFilenames | Format-Table -AutoSize
+#        $DisplayCustomeSrcObj = Set-SrcPathObject
+#        $DisplayCustomeSrcObj | Format-Table -AutoSize
+########################################
+
+    Write-Host "Get-FoldersToArchive table:`n" -ForegroundColor Magenta
+
+    $foldersToArchive = Get-FoldersToArchive
+    #$foldersToArchive | Format-Table  FolderName,LastWriteDate,ArchiveStatus,MatchingFiles -AutoSize
+    $foldersToArchive | Format-Table FolderName, LastWriteDate, ArchiveStatus, MatchingFiles, Warnings -AutoSize
+
+    $foldersToArchiveNow = $foldersToArchive | Where-Object { $_.NeedsArchiving }
+    Write-Host "Folders to be archived:" -ForegroundColor Green
+    $foldersToArchiveNow | Format-Table FolderName, HypotheticalName -AutoSize
+
+#    $DisplayCustomeDstObj = Set-DestPathObject # | Select-Object -Property FileName,LastWriteDate
+#    $DisplayCustomeDstObj | Format-Table -AutoSize
+
+#    $DisplayCustomeSrcObj = Set-SrcPathObject -Verbose
+#    $validFolders = $DisplayCustomeSrcObj | Where-Object { $_.IsOver50KB }
+##    Write-Host "Folders to consider for archiving:" -ForegroundColor Green
+#    $validFolders | Format-Table -AutoSize #FolderName, LastWriteDate, HypotheticalName, IsOver50KB -AutoSize
+#    $excludedFolders = $DisplayCustomeSrcObj | Where-Object { -not $_.IsOver50KB }
+#    if ($excludedFolders) {
+#        Write-Host "Folders excluded (size < 50 KB):" -ForegroundColor Yellow
+#        $excludedFolders | Format-Table FolderName, HypotheticalName -AutoSize
+#    }
+########################################
+
+#
+#        $srcDirCount = $DisplayCustomeSrcObj.count
+#        Write-Host "Sourfolder number of items: $($srcDirCount)" -ForegroundColor Magenta
+#
+#        if ( $datesFromFilenames[0].LastWriteDate -ne $DisplayCustomeSrcObj[0].LastWriteDate ) {
+#            Write-Host "`$datesFromFilenames[0].LastWriteDate is not equal to `$DisplayCustomeSrcObj[0].LastWriteDate"
+#        }
+
+        Stop-Transcript | Out-Null
+
+    }
+
+Start-GameLibAutoArchiver
 
         #$FilenameSplit = @()
 
@@ -383,24 +553,6 @@ function Start-GameLibAutoArchiver {
         #$DestFileList = Get-DestFileNames
 
     #see dates from file names
-    $datesFromFilenames = Set-DestPathObject
-
-    $datesFromFilenames | Format-Table -AutoSize
-
-#    $DisplayCustomeSrcObj = Set-SrcPathObject 
-#
-#    Write-Host "the custom object came back:`n" -ForegroundColor Yellow
-#    $DisplayCustomeSrcObj
-#
-#    
-#
-#    $DisplayCustomeSrcObj | Format-Table -AutoSize
-
-        Stop-Transcript | Out-Null
-
-}
-    
-    Start-GameLibAutoArchiver
 
         #Write-Host "valid underscore list should be $($validatedNamesUnderscored)"
 

@@ -9,3 +9,5 @@
 
 # Ignore test result output
 Tests/*.xml
+/gamelibautoarchiver/Start-GameLibraryArchive-log.txt
+/gamelibautoarchiver/Start-GameLibraryArchive-log2.txt
