@@ -180,19 +180,17 @@ function Set-DestPathObject {
 #        Write-Host "value of `$DateCodeFromFile is $DateCodeFromFile and is of type $($DateCodeFromFile.GetType().Name)`n"  -ForegroundColor Blue
 #        Write-Host "now attempting to send date into GetFileDate...`n"
 
-        $platform = ($fileBasename -split "_")[-1]
-
         try {
         $finalDateCode = Get-FileDateStamp $DateCodeFromFile
 #        Write-Host "value of `$finalDateCode is $finalDateCode`n"  -ForegroundColor Magenta 
         } 
         catch {
-            Write-Verbose "Invalid date code in $FileBaseName`: $_"
+            Write-Verbose "Invalid date code in $fileBaseName`: $_"
             return
         }
 
         $underscoreName = ($fileSplit[0..($fileSplit.Count - 3)] -join "_")
-
+        $platform = $fileSplit[-1]
 
         [PSCustomObject]@{
             FileName = $fileBasename
@@ -385,15 +383,15 @@ function Get-FolderSizeKB {
 function Get-FoldersToArchive {
     [CmdletBinding()]
     param (
-#        [Parameter(Mandatory = $true)]
-#        [PSCustomObject[]]$SourceObjects#,
-#        [Parameter(Mandatory = $true)]
-#        [string]$DestinationFolder
+        [Parameter(Mandatory = $true)]
+        [PSCustomObject[]]$SourceObjects,
+        [Parameter(Mandatory = $true)]
+        [PSCustomObject[]]$DisplayCustomeDstObj
     )
 
     #$destFiles = Set-DestPathObject $DisplayCustomeDstObj #| Select-Object -Property FileName 
-    $DisplayCustomeDstObj = Set-DestPathObject #| Select-Object -Property FileName 
-    $SourceObjects = Set-SrcPathObject
+    #$DisplayCustomeDstObj = Set-DestPathObject #| Select-Object -Property FileName 
+    #$SourceObjects = Set-SrcPathObject
 
     $results = @()
     foreach ($src in $SourceObjects) {
@@ -402,10 +400,12 @@ function Get-FoldersToArchive {
         $folderName = $src.FolderName
         $hypotheticalName = $src.HypotheticalName
         $underscoreName= $src.UnderScoreName
+        $platform = $src.platform
         $lastWriteDate = $src.LastWriteDate
         $isOver50KB = $src.IsOver50KB
         $archiveStatus = "NeedsArchive"
         $matchingFiles = @()
+        $warnings = @()
 
         # Skip folders under 50 KB
         # Step 1: Check if folder is excluded (< 50 KB)
@@ -414,49 +414,51 @@ function Get-FoldersToArchive {
 #            Write-Host "value of `$src is $src and kb status is $($src.IsOver50KB)" -ForegroundColor Green
             $archiveStatus = "Excluded"
             $results += [PSCustomObject]@{
-                FolderName      = $FolderName
+                FolderName       = $FolderName
                 HypotheticalName = $HypotheticalName
-                LastWriteDate   = $LastWriteDate
-                IsOver50KB      = $IsOver50KB
-                ArchiveStatus   = $archiveStatus
+                LastWriteDate    = $LastWriteDate
+                IsOver50KB       = $IsOver50KB
+                ArchiveStatus    = $archiveStatus
                 MatchingFiles    = $matchingFiles
+                Warnings         = $warnings
+                NeedsArchiving   = $false
             }
             continue
         }
         #}
         #return $results # for testing up to above foreach loop, shouldn't be required when function is finished
 
-        #$platform = ($hypotheticalName -split "_")[-1]
-        # Step 2: Extract platform from HypotheticalName
-        $platform = Get-PlatformShortName
-
-        # Step 3: Check for exact matches (up-to-date archive)
+                        
+        # Step 2: Check for exact matches (up-to-date archive)
         $matchingArchives = $DisplayCustomeDstObj | Where-Object { $_.FileName -eq $hypotheticalName }
 
         if ($matchingArchives) {
             $archiveStatus = "AlreadyArchived"
             $matchingFiles = @($matchingArchives.FileName)
         } else {
-            # Step 4: Check for related archives (older or future-dated)
+            # Step 3: Check for related archives (older or future-dated)
             $relatedArchives = $DisplayCustomeDstObj | Where-Object {
                 $_.UnderScoreName -eq $underscoreName -and
-                $_.FileName -like "*_${platform}" #-and
+                $_.Platform -eq $platform
+                #$_.FileName -like "*_${platform}" #-and
 #                $_.LastWriteDate -lt $lastWriteDate
             }
 
             if ($relatedArchives) {
-                $olderArchives = $relatedArchives | Where-Object { $_.LastWriteDate -lt $lastWriteDate }
-                $futureArchives = $relatedArchives | Where-Object { $_.LastWriteDate -gt $lastWriteDate }
+#                $olderArchives = $relatedArchives | Where-Object { $_.LastWriteDate -lt $lastWriteDate }
+#                $futureArchives = $relatedArchives | Where-Object { $_.LastWriteDate -gt $lastWriteDate }
 
                 $matchingFiles = @($relatedArchives.FileName)
+                $futureArchives = $relatedArchives | Where-Object{ $_.LastWriteDate -gt $lastWriteDate }
 
                 if ($futureArchives) {
+                    $archiveStatus = "RequiredAction"
                     $warnings += "Future-dated archives detected`: $($futureArchives.FileName -join ', ')"
                 }
             }
         }
 
-        # Step 5: Add result to output
+        # Step 4: Add result to output
         $results += [PSCustomObject]@{
             FolderName       = $folderName
             HypotheticalName = $hypotheticalName
@@ -484,6 +486,10 @@ function Start-GameLibAutoArchiver {
         Validate-ScriptParameters
         Validate-SourcePathPopulation
  
+        $DisplayCustomeDstObj = Set-DestPathObject
+        $SourceObjects = Set-SrcPathObject
+ 
+ 
         # $SizeOfTest = Get-FolderSizeKB "Outzone"
         # Write-Host "value of SizeOfTest is $SizeOfTest"
 #        $datesFromFilenames = Set-DestPathObject
@@ -495,15 +501,26 @@ function Start-GameLibAutoArchiver {
 #        $DisplayCustomeSrcObj | Format-Table -AutoSize
 ########################################
 
-    Write-Host "Get-FoldersToArchive table:`n" -ForegroundColor Magenta
+        Write-Host "Get-FoldersToArchive table:`n" -ForegroundColor Magenta
 
-    $foldersToArchive = Get-FoldersToArchive
-    #$foldersToArchive | Format-Table  FolderName,LastWriteDate,ArchiveStatus,MatchingFiles -AutoSize
-    $foldersToArchive | Format-Table FolderName, LastWriteDate, ArchiveStatus, MatchingFiles, Warnings -AutoSize
+        $foldersToArchive = Get-FoldersToArchive -SourceObjects $SourceObjects -DisplayCustomeDstObj $DisplayCustomeDstObj
+        #$foldersToArchive | Format-Table  FolderName,LastWriteDate,ArchiveStatus,MatchingFiles -AutoSize
+        $foldersToArchive | Format-Table FolderName, LastWriteDate, ArchiveStatus, MatchingFiles, Warnings -AutoSize -Wrap
 
-    $foldersToArchiveNow = $foldersToArchive | Where-Object { $_.NeedsArchiving }
-    Write-Host "Folders to be archived:" -ForegroundColor Green
-    $foldersToArchiveNow | Format-Table FolderName, HypotheticalName -AutoSize
+#        $foldersToArchiveNow = $foldersToArchive | Where-Object { $_.NeedsArchiving }
+#        Write-Host "Folders to be archived:" -ForegroundColor Green
+#        $foldersToArchiveNow | Format-Table FolderName, HypotheticalName -AutoSize
+
+        $actionRequired = $foldersToArchive | Where-Object { $_.ArchiveStatus -eq "RequiredAction" }
+        if ($actionRequired) {
+            Write-Warning "Folders requiring action:"
+            $actionRequired | Format-Table FolderName, HypotheticalName, Warnings -AutoSize -Wrap
+        }
+#
+        # Final list of folders to archive
+        $foldersToArchiveNow = $foldersToArchive | Where-Object { $_.NeedsArchiving }
+        Write-Host "Folders to be archived:" -ForegroundColor Green
+        $foldersToArchiveNow | Format-Table FolderName, HypotheticalName -AutoSize
 
 #    $DisplayCustomeDstObj = Set-DestPathObject # | Select-Object -Property FileName,LastWriteDate
 #    $DisplayCustomeDstObj | Format-Table -AutoSize
