@@ -31,25 +31,10 @@
     SteamZipper scans a ...
 #>
 
-# # param (
-# #     [Parameter(ParameterSetName="Manual")][string]$sourceFolder,
-# #     [Parameter(ParameterSetName="Manual")][string]$destinationFolder
-# # )
-# #>
 
 param (
     [string]$sourceFolder,
     [string]$destinationFolder
-#    [Parameter(ParameterSetName="Manual")][string]$sourceFile,
-#    [Parameter(ParameterSetName="Manual")][switch]$debugMode,
-#    [Parameter(ParameterSetName="Manual")][switch]$VerbMode,
-#    [Parameter(ParameterSetName="Manual")][switch]$keepDuplicates,
-#    [Parameter(ParameterSetName="Manual")][ValidateSet("Optimal", "Fastest", "NoCompression")][string]$CompressionLevel = "Optimal",
-#    [Parameter(ParameterSetName="Manual")][string]$answerFile,
-#    [Parameter(ParameterSetName="Manual")][string]$createAnswerFile,
-#    [Parameter(ParameterSetName="Manual")][switch]$Parallel,
-#    [Parameter(ParameterSetName="Manual")][ValidateRange(1, 16)][int]$MaxJobs = $global:maxJobsDefine,
-#    [Parameter(ParameterSetName="Manual")][switch]$Help
 )
 
 $ModuleRoot = $PSScriptRoot
@@ -104,15 +89,6 @@ $PreferredDateFormat = "MMddyyyy"
 $global:sizeLimitKB = 50 # arbitrary folder size
 $global:logBaseName = "Start-GameLibraryArchive-log.txt"
 
-# NON-GLOBAL VARIABLES
-# i haven't decided which if any of these to keep so I'm just leaving this block here
-#if ($null -ne $params.sourceFolder) { $sourceFolder = $params.sourceFolder }
-#if ($null -ne $params.destinationFolder) { $destinationFolder = $params.destinationFolder }
-#if ($null -ne $params.debugMode) { $debugMode = $params.debugMode }
-#if ($null -ne $params.VerbMode) { $VerbMode = $params.VerbMode }
-#if ($null -ne $params.keepDuplicates) { $keepDuplicates = $params.keepDuplicates }
-#if ($null -ne $params.CompressionLevel) { $CompressionLevel = $params.CompressionLevel }
-#if ($null -ne $params.sourceFile) { $sourceFile = $params.sourceFile }
 
 
 function Set-SrcPathObject {
@@ -144,8 +120,6 @@ function Set-SrcPathObject {
             
 #       Write-Host "value of `$_.BaseName is $($_.BaseName)"
         $lastwritedate = $_.LastWriteTime
-#       Write-Host "value of `$_.LastWriteTime is $($_.LastWriteTime)"
-        # generate hypothetical name
         $underscorename = ConvertTo-UnderscoreName -Name $folderName
         $datecode = $lastwritedate | Get-Date -Format $PreferredDateFormat
         $platform = Get-PlatformShortName
@@ -275,11 +249,6 @@ function Get-FileDateStamp {
 #    Write-Host "SeeIfAbsPath value from the test of  ( (Test-Path `$StrToConvert) -and ((Get-Item `$StrToConvert).PSIsContainer ) ) is $($SeeIfAbsPath)"
 
     if ( $SeeIfAbsPath   ) { # if the parameter is already a path
-        #$GetIsContain = Get-Item $StrToConvert
-        #if ($GetIsContain -and $GetIsContain.PSIsContainer) {
-#            Write-Host "`n.....if seeing this then `"$($StrToConvert)`" both exists as a path and is a folder`n"
-#            Write-Host "attempting to return last write time of StrToConvert, value is $(( Get-Item $StrToConvert).LastWriteTime)`n" -ForegroundColor Green
-            #return $StrToConvert # just return the path, the end
             return (Get-Item $StrToConvert).LastWriteTime
         #}
     }
@@ -429,33 +398,28 @@ function Get-FoldersToArchive {
         #return $results # for testing up to above foreach loop, shouldn't be required when function is finished
 
                         
-        # Step 2: Check for exact matches (up-to-date archive)
-        $matchingArchives = $DisplayCustomeDstObj | Where-Object { $_.FileName -eq $hypotheticalName }
+        # Step 2: Check for related archives (older, exact, or future-dated)
 
-        if ($matchingArchives) {
+        $relatedArchives = $DisplayCustomeDstObj | Where-Object {
+            $_.UnderScoreName -eq $underscoreName -and
+            $_.Platform -eq $platform
+        }
+
+        if ($relatedArchives) {
+            #$archiveStatus = "AlreadyArchived"
+            $matchingFiles = @($relatedArchives.FileName)
+            $futureArchives = $relatedArchives | Where-Object { $_.LastWriteDate -gt $lastWriteDate }
+            if ($futureArchives) {
+                $archiveStatus = "RequiresAction"
+                $warnings += "Future-dated archive(s) detected: $($futureArchives.FileName -join ', ')"
+            }
+        } 
+
+        # Step 3: Check for exact match to set ArchiveStatus
+
+        $matchingArchives = $relatedArchives | Where-Object { $_.FileName -eq $hypotheticalName }
+        if ( $matchingArchives ) {
             $archiveStatus = "AlreadyArchived"
-            $matchingFiles = @($matchingArchives.FileName)
-        } else {
-            # Step 3: Check for related archives (older or future-dated)
-            $relatedArchives = $DisplayCustomeDstObj | Where-Object {
-                $_.UnderScoreName -eq $underscoreName -and
-                $_.Platform -eq $platform
-                #$_.FileName -like "*_${platform}" #-and
-#                $_.LastWriteDate -lt $lastWriteDate
-            }
-
-            if ($relatedArchives) {
-#                $olderArchives = $relatedArchives | Where-Object { $_.LastWriteDate -lt $lastWriteDate }
-#                $futureArchives = $relatedArchives | Where-Object { $_.LastWriteDate -gt $lastWriteDate }
-
-                $matchingFiles = @($relatedArchives.FileName)
-                $futureArchives = $relatedArchives | Where-Object{ $_.LastWriteDate -gt $lastWriteDate }
-
-                if ($futureArchives) {
-                    $archiveStatus = "RequiredAction"
-                    $warnings += "Future-dated archives detected`: $($futureArchives.FileName -join ', ')"
-                }
-            }
         }
 
         # Step 4: Add result to output
@@ -486,63 +450,21 @@ function Start-GameLibAutoArchiver {
         Validate-ScriptParameters
         Validate-SourcePathPopulation
  
-        $DisplayCustomeDstObj = Set-DestPathObject
+        $DestinationObjects = Set-DestPathObject
         $SourceObjects = Set-SrcPathObject
  
  
-        # $SizeOfTest = Get-FolderSizeKB "Outzone"
-        # Write-Host "value of SizeOfTest is $SizeOfTest"
-#        $datesFromFilenames = Set-DestPathObject
-#
-##        $finalDateCode = $datesFromFilenames | Get-FolderSizeKB
-#
-#        $datesFromFilenames | Format-Table -AutoSize
-#        $DisplayCustomeSrcObj = Set-SrcPathObject
-#        $DisplayCustomeSrcObj | Format-Table -AutoSize
 ########################################
 
-        Write-Host "Get-FoldersToArchive table:`n" -ForegroundColor Magenta
+#        Write-Host "Get-FoldersToArchive table:`n" -ForegroundColor Magenta
 
-        $foldersToArchive = Get-FoldersToArchive -SourceObjects $SourceObjects -DisplayCustomeDstObj $DisplayCustomeDstObj
+        $foldersToArchive = Get-FoldersToArchive -SourceObjects $SourceObjects -DisplayCustomeDstObj $DestinationObjects
         #$foldersToArchive | Format-Table  FolderName,LastWriteDate,ArchiveStatus,MatchingFiles -AutoSize
         $foldersToArchive | Format-Table FolderName, LastWriteDate, ArchiveStatus, MatchingFiles, Warnings -AutoSize -Wrap
+        #$foldersToArchive | Format-Table FolderName, LastWriteDate, MatchingFiles, Warnings -AutoSize -Wrap
 
-#        $foldersToArchiveNow = $foldersToArchive | Where-Object { $_.NeedsArchiving }
-#        Write-Host "Folders to be archived:" -ForegroundColor Green
-#        $foldersToArchiveNow | Format-Table FolderName, HypotheticalName -AutoSize
-
-        $actionRequired = $foldersToArchive | Where-Object { $_.ArchiveStatus -eq "RequiredAction" }
-        if ($actionRequired) {
-            Write-Warning "Folders requiring action:"
-            $actionRequired | Format-Table FolderName, HypotheticalName, Warnings -AutoSize -Wrap
-        }
-#
-        # Final list of folders to archive
-        $foldersToArchiveNow = $foldersToArchive | Where-Object { $_.NeedsArchiving }
-        Write-Host "Folders to be archived:" -ForegroundColor Green
-        $foldersToArchiveNow | Format-Table FolderName, HypotheticalName -AutoSize
-
-#    $DisplayCustomeDstObj = Set-DestPathObject # | Select-Object -Property FileName,LastWriteDate
-#    $DisplayCustomeDstObj | Format-Table -AutoSize
-
-#    $DisplayCustomeSrcObj = Set-SrcPathObject -Verbose
-#    $validFolders = $DisplayCustomeSrcObj | Where-Object { $_.IsOver50KB }
-##    Write-Host "Folders to consider for archiving:" -ForegroundColor Green
-#    $validFolders | Format-Table -AutoSize #FolderName, LastWriteDate, HypotheticalName, IsOver50KB -AutoSize
-#    $excludedFolders = $DisplayCustomeSrcObj | Where-Object { -not $_.IsOver50KB }
-#    if ($excludedFolders) {
-#        Write-Host "Folders excluded (size < 50 KB):" -ForegroundColor Yellow
-#        $excludedFolders | Format-Table FolderName, HypotheticalName -AutoSize
-#    }
 ########################################
 
-#
-#        $srcDirCount = $DisplayCustomeSrcObj.count
-#        Write-Host "Sourfolder number of items: $($srcDirCount)" -ForegroundColor Magenta
-#
-#        if ( $datesFromFilenames[0].LastWriteDate -ne $DisplayCustomeSrcObj[0].LastWriteDate ) {
-#            Write-Host "`$datesFromFilenames[0].LastWriteDate is not equal to `$DisplayCustomeSrcObj[0].LastWriteDate"
-#        }
 
         Stop-Transcript | Out-Null
 
@@ -550,224 +472,6 @@ function Start-GameLibAutoArchiver {
 
 Start-GameLibAutoArchiver
 
-        #$FilenameSplit = @()
-
-        # Get validated non-empty folders: array with full paths, as FS objects
-        #$nonEmptyFolders = Get-NonEmptySourceFolders
-
-#        Write-Host "valid list should be $($nonEmptyFolders)"
-
-        # Get their names with underscores for comparison: array of source folder names with _ in place of spaces
-        # - should still be FS objects -- just names with underscores, no full paths
-        #$validatedNamesUnderscored = $nonEmptyFolders.Name | ConvertTo-UnderscoreName
-
-        #Write-Host "validatedNamesUnderscored value is  $validatedNamesUnderscored" -ForegroundColor Magenta
-
-        #Write-Host "nonemptyfolders value is  $(($nonEmptyFolders).BaseName)" -ForegroundColor Magenta # list full paths
-
-#        Write-Host " I can't believe `$((`$nonEmptyFolders).BaseName) actually works to list only the `
-#folder names and not the whole paths:`n$(($nonEmptyFolders).BaseName)" -ForegroundColor Magenta
-        #$DestFileList = Get-DestFileNames
-
-    #see dates from file names
-
-        #Write-Host "valid underscore list should be $($validatedNamesUnderscored)"
-
-        # Get destination files - obviously i need some functions to handle the destination half of this
-#        $destFiles = Get-ChildItem $destinationFolder -File | Select-Object -ExpandProperty BaseName
-
-#        Write-Host "valid list should be $($destFiles)"
-
-
-#         $getDatefromCode = Get-FileDateStamp " "
-#         Write-Host "getDatefromCode value is $getDatefromCode"
-# 
-        #$getDateFromPathFolder = Get-FileDateStamp "P:\Game-Library-Auto-Archiver\GameSource\bit Dungeon III"
-        #$getDateFromPathFolder = Get-FileDateStamp "bit Dungeon III"
-        #Write-Host "getDatefromCode value is $getDateFromPathFolder"
-# 
-#         $getDateCodeFromDate = Get-FileDateStamp "01/04/2025"
-#         Write-Host "getDateCodeFromDate value is $getDateCodeFromDate"
-
-#        $getDateObject = Get-FileDateStamp "03312025"
-#        Write-Host "(inside Start-GameLibAutoArchiver function) from date code string 03312025 now have value $($getDateObject) of type $($getDateObject.GetType()) `n"
-        #$ConvertDateObjToCode = Get-FileDateStamp $getDateObject
-        #Write-Host "ConvertDateObjToCode value return is $($ConvertDateObjToCode)"
-
-#        if ($($getDateObject.GetType().Name) -eq ([datetime]) ) {
-#            Write-Host "date time return is true" # came back true
-#        } else { "did not come back true" }
-
-#        $getDateObject = Get-FileDateStamp "Outzone_11012024_steam.zip"
-#        Write-Host "from input Outzone_11012024_steam.zip, value return is $($getDateObject)" # of type $($getDateObject.GetType().Name)`n"
-#        $getDateObject = Get-FileDateStamp "P:\Game-Library-Auto-Archiver\GameSource\bit Dungeon"
-#        Write-Host "from input 'P:\Game-Library-Auto-Archiver\GameSource\bit Dungeon', value return is $($getDateObject)" # of type $($getDateObject.GetType().Name)`n"    
-
-
-
-    # Compare
-        # $FileMatches = $validatedNamesUnderscored | Where-Object { $destFiles -contains $_ }
-        
-
-        # using the Select-Object -ExpandProperty BaseName in the Get-DestFileNames function does return file names only, no paths
-        # but it also cuts off the .zip part of the name, which is probably better for file extension nuetrality in the long run
-        # right? as far as i know this array should still be FS objects
-
-
-
-
-
-
-        #        $DestFileList.
-        #Write-Host "file name list: $($DestFileList)"
-
-        #$FileMatches = $validatedNamesUnderscored | Where-Object {$DestFileList -contains ($_ -split '_',-3)[6] } # ($DestFileList -split '_',-3)[6] 
-
-        #$justNames = ($DestFileList -split '_',-3)[6]
-        #Write-Host "file name matches: $($justNames)"
-        #Write-Host "file name matches: $($FileMatches)"
-
-#         Write-Host "src name list: $($validatedNamesUnderscored)"
-#         Write-Host "and"
-
-#         $namesSplitted = ($DestFileList[0]) -split "_"
-#         $elementcount = $namesSplitted.count - 3
-#         $justGameName = $($namesSplitted[0..$elementcount])
-
-#        $justFileNames  = $DestFileList | ForEach-Object { 
-#            $namesSplitted = $_.Split("_")
-#            $justSplit = $namesSplitted[0..-3]
-#
-#            #$FilenameSplit += ($namesSplitted)[0..-3]
-#
-#        }
-#
-#        Write-Host "dest file name list: $($DestFileList)`n"
-#
-#         write-host "namesSplitted is $($namesSplitted)`n"
-#         Write-Host "justGameName is $($justGameName)`n"
-# 
-#         $joinBack = $justGameName -join "_"
-# 
-#         Write-Host "joinBack is $($justGameName -join "_")`n"
-# 
-        
-        #
-#        write-host "justSplit is $($justSplit)`n"
-
-
-        #Write-Host "file name matches: $($FileMatches.count)"
-        # Write-Host "file name matches: $($FileMatches)"
-
-#        $getPlatform = Get-PlatformShortName
-#        
-#        $validList = Remove-EmptySrcFolders
-#
-#        $FoldersWithoutUnderscores = Get-ValidSourceFolderList -UnderscoreList
-
-#        Write-Host "valid list should be $($FoldersWithoutUnderscores)"
-        #Write-Host "valid list should be $($validList.fullName)"
-        
-        
-        #Write-Host "the platform is $getPlatform"
-        # $determineEmptyNot = Get-FolderSizeKB "P:\Game-Library-Auto-Archiver\SteamSource\bit Dungeon"
-        #$determineEmptyNot = Get-FolderSizeKB "P:\Game-Library-Auto-Archiver\SteamSource\cyberpunk"
-        #Write-Host "Result of determining if path is empty or not is $($determineEmptyNot)"
-
-    #    Get-ValidSourceFolderList
-        # $folderswithUnderscores = Get-ValidSourceFolderList -underscorelist "underscorelist"
-        # $FoldersWithoutUnderscores = Get-ValidSourceFolderList -nonunderscorelist "nonunderscorelist"
-        # Write-Host "a list without underscores is $FoldersWithoutUnderscores"
-        # Write-Host "and"
-        # Write-Host "a list with underscores is $folderswithUnderscores"
-
-    # end of transcript ##################################################
-
-
-
-
-#Export-ModuleMember -Function Start-GameLibraryArchive
-#Export-ModuleMember -Function Main
-
-
-
-
-
-
-# hypothetical start of script produced by an LLM. Not actually needed here, though.
-#function Start-GameLibraryArchive {
-#    param (
-#        [Parameter(Mandatory)]
-#        [string]$LibraryPath
-#    )
-#    Get-ChildItem -Path $LibraryPath -Directory | ForEach-Object {
-#        $gameFolder = $_.FullName
-#        $lastWrite = $_.LastWriteTime.ToString("yyyyMMdd")
-#        $platform = "Unknown" # Add platform detection later
-#        $zipName = Join-Path $ModuleRoot "$($_.Name)_$lastWrite_$platform.zip"
-#        Compress-Archive -Path $gameFolder -DestinationPath $zipName -Force
-#    }
-#}
-
-
-
-# function Remove-EmptySrcFolders {
-# # Removed $PathArrayNonEmpty and +=:
-# # Instead of building a new array manually, Where-Object filters $PathArray to only include folders where Get-FolderSizeKB $_ returns $true.
-# # This is more efficient (no array copying) and cleaner.
-# #
-# # The += Concern: Using $PathArrayNonEmpty += $_ works but is less efficient because it creates a new array each time 
-# # --->(arrays in PowerShell are immutable, so += copies the array with the new element)<---. For small lists, it’s fine, but for larger ones, 
-# # it’s slower than necessary.
-# #        this usage works -
-# #         $GetFolderInfo = Remove-EmptySrcFolders
-# #         Write-Host "the names of the folders are: $($GetFolderInfo.Name)"
-# #         Write-Host "the names of the folders are: $($GetFolderInfo.FullName)"
-# 
-# 
-# 
-#     $FoldersWithoutUnderscores = Get-ValidSourceFolderList -NonUnderscoreList
-# 
-#     # so i'll pipe in that array to a for-eachboject and this will make it into an array of full paths, each one
-#     $PathArray = @()
-# #    $PathArrayNonEmpty = @()
-#     # this line actually fills the array with the full path as an filesystem path/object
-#     $PathArray = $FoldersWithoutUnderscores | ForEach-Object { Get-Item (Join-Path $sourceFolder $_) }
-# 
-#     return $PathArray | Where-Object { Get-FolderSizeKB $_ }
-# 
-# }
-
-
-
-# function Get-ValidSourceFolderList {
-#     # underscored versus non-underscored
-#     # using [switch] makes it so only -UnderscoreList is need, as support to -UnderscoreList (some value)
-#     param (
-#         [switch]$UnderscoreList,
-#         [switch]$NonUnderscoreList
-#     )
-# 
-#     # still trying to decide what all this function should do. 
-#     # so far it gets the subfolder list as an array
-#     # then i use a second array to create the version with underscores instead of spaces
-# 
-#     # below is saying: if the UnderscoreList parameter is used at all, return a list with foldernames
-#     # that have underscores instead of spaces 
-#     # (this has a problem if you just want names as opposed to full paths with names that have _ instad of spaces)
-#     #
-#     # and also if -NonUnderscoreList is used at all then return the non underscore version
-# 
-# 
-#     if ($UnderscoreList) {
-#         return Get-ChildItem $sourceFolder -Directory | ForEach-Object { $_.Name -replace ' ', '_' }
-#     }
-#     elseif ($NonUnderscoreList) {
-#         return Get-ChildItem $sourceFolder -Directory | Select-Object -ExpandProperty Name
-#     }
-#     return $false
-# 
-# }
 
 
 

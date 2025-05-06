@@ -1,0 +1,37 @@
+**********************
+PowerShell transcript start
+Start time: 20250505174538
+Username: GALACTICA\Keith
+RunAs User: GALACTICA\Keith
+Configuration Name: 
+Machine: GALACTICA (Microsoft Windows NT 10.0.19045.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll
+Process ID: 33268
+PSVersion: 7.5.0
+PSEdition: Core
+GitCommitId: 7.5.0
+OS: Microsoft Windows 10.0.19045
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+
+FolderName      LastWriteDate      ArchiveStatus   MatchingFiles                                                            Warnings
+----------      -------------      -------------   -------------                                                            --------
+bit Dungeon     3/16/2025 11:40:26 NeedsArchive    {bit_Dungeon_11012024_steam}                                             {}
+bit Dungeon II  3/21/2025 11:40:26 NeedsArchive    {bit_Dungeon_II_11012024_steam}                                          {}
+bit Dungeon III 3/31/2025 11:40:26 NeedsArchive    {bit_Dungeon_III_11012024_steam}                                         {}
+cyberpunk       3/26/2025 11:40:26 Excluded        {}                                                                       {}
+doom 2016       3/16/2025 11:40:26 Excluded        {}                                                                       {}
+Horizon Chase   3/21/2025 11:40:26 NeedsArchive    {Horizon_Chase_12152024_steam}                                           {}
+Markov Alg      3/31/2025 11:40:26 NeedsArchive    {Markov_Alg_12212024_steam}                                              {}
+Ms. PAC-MAN     3/26/2025 11:40:26 NeedsArchive    {}                                                                       {}
+Outzone         3/16/2025 11:40:26 AlreadyArchived {Outzone_03162025_steam, Outzone_11012024_steam, Outzone_11022024_steam} {}
+PAC-MAN         3/21/2025 11:40:26 RequiresAction  {PAC-MAN_07062025_steam}                                                 {Future-dated archive(s) detected: PAC-MAN_07062025_steam}
+
+**********************
+PowerShell transcript end
+End time: 20250505174539
+**********************
