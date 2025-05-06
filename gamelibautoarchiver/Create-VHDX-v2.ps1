@@ -1,9 +1,7 @@
 # "the one without all the comments"
 # Create-VHDX.ps1
-# $sourcePath = 'P:\Program Files (x86)\Steam\steamapps\common\Dig Dog'
-# $vhdxPath = 'P:\DigDog2.vhdx'
 $sourcePath = 'c:\Program Files (x86)\Steam\steamapps\common\Dig Dog'
-$vhdxPath = 'C:\Users\keith\Documents\Game-Library-Auto-Archiver\DigDog2.vhdx'
+$vhdxPath = 'C:\Users\user\Documents\Game-Library-Auto-Archiver\DigDog2.vhdx'
 $vhdxSize = 110MB # dig dog
 
 Measure-Command {
