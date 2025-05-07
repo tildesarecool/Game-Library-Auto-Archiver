@@ -145,36 +145,57 @@ function Set-DestPathObject {
     [CmdletBinding()]
     param()
 #    $ExtractedFileNameDate = @()
+
+    $results = @()
+
     Get-ChildItem -Path $destinationFolder -File -ErrorAction SilentlyContinue | ForEach-Object {
         $fileBasename = $_.BaseName # should be a file name, like Outzone_11012024_steam
 #        Write-Host "value of `$fileBasename is $fileBasename`n"  -ForegroundColor Green
+        $FullFileName = $_.Name
         $FileSplit = $fileBasename -split "_" # break file name into pieces based on _, like Outzone 11012024 steam
 #        Write-Host "value of `$fileSplit is $fileSplit`n"  -ForegroundColor Green
         $DateCodeFromFile = $FileSplit[-2].Trim()
+        $Platform = $FileSplit[-1]
 #        Write-Host "value of `$DateCodeFromFile is $DateCodeFromFile and is of type $($DateCodeFromFile.GetType().Name)`n"  -ForegroundColor Blue
 #        Write-Host "now attempting to send date into GetFileDate...`n"
 
         try {
-        $finalDateCode = Get-FileDateStamp $DateCodeFromFile
+            $lastWriteDate = Get-FileDateStamp $DateCodeFromFile
+            #$platform = Get-PlatformShortName 
+            
+            $underscoreName = ($fileSplit[0..($fileSplit.Count - 3)] -join "_")
+
+            $results += [PSCustomObject]@{
+                FileName        = $fileBasename
+                FullFileName    = $FullFileName
+                UnderScoreName  = $underscoreName
+                lastWriteDate   = $lastWriteDate
+                Platform        = $Platform
+                Warnings        = $null
+            }
+            
+            #$finalDateCode = Get-FileDateStamp $DateCodeFromFile
 #        Write-Host "value of `$finalDateCode is $finalDateCode`n"  -ForegroundColor Magenta 
-        } 
-        catch {
-            Write-Verbose "Invalid date code in $fileBaseName`: $_"
-            return
-        }
+        } catch {
+            Write-Verbose "Invalid date code in $fileBasename`: $_"
+            $results += [PSCustomObject]@{
+                FileName          = $fileBasename
+                FullFileName      = $FullFileName
+                UnderScoreName    = $null
+                LastWriteDate     = $null
+                Platform          = $null
+                Warnings           = "Invalid date code in $FileNameWithExt`: $_"
+            }                                      
 
-        $underscoreName = ($fileSplit[0..($fileSplit.Count - 3)] -join "_")
-        $platform = $fileSplit[-1]
-
-        [PSCustomObject]@{
-            FileName = $fileBasename
-            UnderScoreName = $underscoreName
-            LastWriteDate  = $finalDateCode
-            Platform       = $platform
         }
     }
+
+#        $underscoreName = ($fileSplit[0..($fileSplit.Count - 3)] -join "_")
+#        $platform = Get-PlatformShortName -Name $fileBasename
+
     # for debugging at least return whatever $ExtractedFileNameDate is
     #return $ExtractedFileNameDate
+    return $results
 }
 
 
@@ -407,7 +428,7 @@ function Get-FoldersToArchive {
 
         if ($relatedArchives) {
             #$archiveStatus = "AlreadyArchived"
-            $matchingFiles = @($relatedArchives.FileName)
+            $matchingFiles = @($relatedArchives.FileNameWithExt)
             $futureArchives = $relatedArchives | Where-Object { $_.LastWriteDate -gt $lastWriteDate }
             if ($futureArchives) {
                 $archiveStatus = "RequiresAction"
@@ -419,8 +440,13 @@ function Get-FoldersToArchive {
 
         $matchingArchives = $relatedArchives | Where-Object { $_.FileName -eq $hypotheticalName }
         if ( $matchingArchives ) {
-            $archiveStatus = "AlreadyArchived"
-        }
+            if ($matchingArchives.Count -gt 1)  {
+                $archiveStatus = "RequiresAction"
+                $warnings += "Multiple exact match archives detected: $($matchingArchives.FileNameWithExt -join ', ')"            
+            } else {                
+                $archiveStatus = "AlreadyArchived"            
+            }
+    }
 
         # Step 4: Add result to output
         $results += [PSCustomObject]@{
@@ -456,11 +482,45 @@ function Start-GameLibAutoArchiver {
  
 ########################################
 
+    $DestinationObjects | Format-Table -AutoSize -Wrap
+    $DestinationObjects.Warnings
+
+    $foldersToArchive = Get-FoldersToArchive -SourceObjects $SourceObjects -DisplayCustomeDstObj $DestinationObjects
+
+    $foldersToArchive | Format-Table FolderName, LastWriteDate, ArchiveStatus, MatchingFiles, Warnings -AutoSize -Wrap
+
+    # Report malformed archives
+    $malformedArchives = ($DestinationObjects | Where-Object { $_.Warnings })
+    Write-Host "value of DestinationObjects.Warnings is $($DestinationObjects.Warnings)" -ForegroundColor Magenta
+    if ($malformedArchives) {
+        Write-Warning "Malformed archives detected:"
+        $malformedArchives | Format-Table FileName, Warning -AutoSize -Wrap
+    }
+#
+#    $foldersToArchive = Get-FoldersToArchive -SourceObjects $SourceObjects -DisplayCustomeDstObj ($DestinationObjects | Where-Object { -not $_.Warning })
+#
+#    # Display full results with wrapped MatchingFiles to avoid wide columns
+#    $foldersToArchive | Format-Table FolderName, LastWriteDate, ArchiveStatus, @{Label='MatchingFiles';Expression={$_.MatchingFiles -join "`n"}}, Warnings -AutoSize -Wrap
+#
+#    # Display folders requiring action
+#    $actionRequired = $foldersToArchive | Where-Object { $_.ArchiveStatus -eq "RequiresAction" }
+#    if ($actionRequired) {
+#        Write-Warning "Folders requiring action:"
+#        $actionRequired | Format-Table FolderName, HypotheticalName, Warnings -AutoSize -Wrap
+#    }
+#
+#    # Final list of folders to archive
+#    $foldersToArchiveNow = $foldersToArchive | Where-Object { $_.NeedsArchiving }
+#    Write-Host "Folders to be archived:" -ForegroundColor Green
+#    $foldersToArchiveNow | Format-Table FolderName,  HypotheticalName  -AutoSize
+
+
+
 #        Write-Host "Get-FoldersToArchive table:`n" -ForegroundColor Magenta
 
-        $foldersToArchive = Get-FoldersToArchive -SourceObjects $SourceObjects -DisplayCustomeDstObj $DestinationObjects
-        #$foldersToArchive | Format-Table  FolderName,LastWriteDate,ArchiveStatus,MatchingFiles -AutoSize
-        $foldersToArchive | Format-Table FolderName, LastWriteDate, ArchiveStatus, MatchingFiles, Warnings -AutoSize -Wrap
+#        $foldersToArchive = Get-FoldersToArchive -SourceObjects $SourceObjects -DisplayCustomeDstObj $DestinationObjects
+#        #$foldersToArchive | Format-Table  FolderName,LastWriteDate,ArchiveStatus,MatchingFiles -AutoSize
+#        $foldersToArchive | Format-Table FolderName, LastWriteDate, ArchiveStatus, MatchingFiles, Warnings -AutoSize -Wrap
         #$foldersToArchive | Format-Table FolderName, LastWriteDate, MatchingFiles, Warnings -AutoSize -Wrap
 
 ########################################
