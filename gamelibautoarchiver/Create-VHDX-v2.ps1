@@ -31,7 +31,7 @@ Measure-Command {
 
     if (-not (trycopy) ) { trycopy } else {
 #        exit 0
-        Write-Host "running compact /c on allthe files in E:"
+        Write-Host "running compact /c on allthe files in $driveLetter"
         #Read-Host "press any key to continue"
         Get-ChildItem $driveLetter -Recurse | ForEach-Object { compact /c $_.FullName }
         Write-Host "dismounting vhdx path ($($vhdxPath))"
