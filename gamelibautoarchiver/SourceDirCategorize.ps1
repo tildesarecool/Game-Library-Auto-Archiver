@@ -22,13 +22,29 @@ $global:MaxFileSizeLimitGB = 1.9
 $global:logBaseName = "Start-GameLibraryArchive-log.txt"
 
 
-if ( Test-Path "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource" ) {
+# if ( Test-Path "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource" ) {
+#     # path for lenovo laptop
+#     $sourceFolder = "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource"    
+# } else {
+#     Write-Host "unable to find path, exiting"
+#     exit 0
+# }
+
+if ( Test-Path "P:\Game-Library-Auto-Archiver\SteamSource" ) {
     # path for lenovo laptop
-    $sourceFolder = "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource"    
+    $sourceFolder = "P:\Game-Library-Auto-Archiver\SteamSource"
 } else {
-    Write-Host "unable to find path, existing"
+    Write-Host "unable to find path, exiting"
     exit 0
 }
+
+# if ( Test-Path "P:\Program Files (x86)\Steam\steamapps\common" ) {
+#     # path for lenovo laptop
+#     $sourceFolder = "P:\Program Files (x86)\Steam\steamapps\common"
+# } else {
+#     Write-Host "unable to find path, exiting"
+#     exit 0
+# }
 
 $ModuleRoot = $PSScriptRoot
 # a list of reasons to prematurally bail...
@@ -61,42 +77,90 @@ function Get-FolderSizeKB {
         [int]$MinFileSizeLimitKB = $global:MinFileSizeLimitKB
     )
 
-    $potentialPath = $null
-    
-    if (Test-Path $folderPath -PathType Container) {
-        $resolvedPath = $folderPath
+    # $potentialPath = $null
+    # 
+    # if (Test-Path $folderPath) { # -PathType Container) {
+    #     $resolvedPath = $folderPath
+    # }
 #        Write-Verbose "Using provided path: $resolvedPath"            
-    } else {
-        $folderName = if ($folderPath -is [System.IO.DirectoryInfo]) { $folderPath.Name } else { [string]$folderPath }
-        $potentialPath = Join-Path -Path $sourceFolder -ChildPath $folderName # childPath parameter only takes string types
-        if (Test-Path -Path $potentialPath -PathType Container) {
-            $resolvedPath = $potentialPath
-#            Write-Verbose "Using constructed path: $resolvedPath"
-        }
-    }
+#    } else {
+#        $folderName = if ($folderPath -is [System.IO.DirectoryInfo]) { $folderPath.Name } else { [string]$folderPath }
+#        $potentialPath = Join-Path -Path $sourceFolder -ChildPath $folderName # childPath parameter only takes string types
+#        if (Test-Path -Path $potentialPath -PathType Container) {
+#            $resolvedPath = $potentialPath
+##            Write-Verbose "Using constructed path: $resolvedPath"
+#        }
+#    }
 
-    if (-not $resolvedPath) {
-        Write-Verbose "Invalid path: $folderPath (and not found under `$sourceFolder)"
-        return $false
-    }    
+    # if (-not $resolvedPath) {
+    #     Write-Verbose "Invalid path: $folderPath (and not found under `$sourceFolder)"
+    #     return $false
+    # }    
 
 
     $FolderSizeKBTracker = 0
 #    foreach ($file in Get-ChildItem -Path $folderPath -Recurse -File -ErrorAction SilentlyContinue -ErrorVariable err) {
-    foreach ($file in Get-ChildItem -Path $resolvedPath -Recurse -File -ErrorAction SilentlyContinue -ErrorVariable err) {
-        $FolderSizeKBTracker += $file.Length / 1KB
-        
-        $FolderDetermineMin = if ($FolderSizeKBTracker -gt $MinFileSizeLimitKB) { 
-            Write-Host "For $resolvedPath, the value of FolderDetermineMin is $FolderDetermineMin"
-            return $true  
-        } #else {  return $false }
-        
-        
-    }
     
-    if ($err) { Write-Debug "Errors during enumeration: $($err | Out-String)" }
+    $IsUnderMinSize     = $false
+    $isOverMaxSize      = $false
+    $isBetweenMinAndMax = $false
+
+    $MeetsMaxfileSize = ($global:MaxFileSizeLimitGB * 1MB) / 1KB
+
+    #Write-Host "the value of MeetsMaxfileSize is $MeetsMaxfileSize" -ForegroundColor Green
+
+
+    foreach ($file in Get-ChildItem -Path $folderPath -Recurse -File ) {
+        $FolderSizeKBTracker += $file.Length / 1KB
+
+
+
+        #Write-Host "FolderSizeKBTracker is currently $FolderSizeKBTracker"
+        #$folderName = $_.BaseName
+        
+        #$FolderDetermineMin = 
+#        if ($FolderSizeKBTracker -lt $MinFileSizeLimitKB) {
+#            # -and ($FolderSizeKBTracker -lt $MeetsMaxfileSize) ) { 
+#            #Write-Host "For $resolvedPath, the value of FolderDetermineMin is $FolderDetermineMin"
+#            $IsUnderMinSize = $true
+#            break
+#            #return $true  
+#        #} elseif (($FolderSizeKBTracker -gt $MinFileSizeLimitKB) ){ # -and ($FolderSizeKBTracker -lt $MeetsMaxfileSize) ) {  
+#        } 
+        
+        if ( $FolderSizeKBTracker -ge $MeetsMaxfileSize ) {
+            $isOverMaxSize = $true
+            $isBetweenMinAndMax = $false
+            $IsUnderMinSize = $false
+        } else { $isOverMaxSize = $false }
+
+    }
+
+    Write-Host "Value of foldersizetracker is $FolderSizeKBTracker and MeetsMaxfileSize is $MeetsMaxfileSize" -ForegroundColor Red
+    
+
+#    if ($FolderSizeKBTracker -gt ($MeetsMaxfileSize -10KB)) {
+#        $isOverMaxSize = $true
+#        $isBetweenMinAndMax = $false
+#        $IsUnderMinSize = $false
+#    } else { $isOverMaxSize = $false }
+
+#    if ( ($FolderSizeKBTracker -gt $MinFileSizeLimitKB) -and ($FolderSizeKBTracker -lt $MeetsMaxfileSize) ) { # -and ($FolderSizeKBTracker -lt $MeetsMaxfileSize) ) {  
+#        $isBetweenMinAndMax = $true
+#        $IsUnderMinSize = $false
+#    } 
+
+    [PSCustomObject]@{
+        #FolderName = $folderPath
+        #IsUnderMinSize = $IsUnderMinSize
+        #isBetweenMinAndMax = $isBetweenMinAndMax
+        IsOverMaxSize = $isOverMaxSize
+        #FolderSize = $FolderSizeKBTracker
+    }    
+
+#    if ($err) { Write-Debug "Errors during enumeration: $($err | Out-String)" }
 #    Write-Verbose "Folder $resolvedPath size: $FolderSizeKBTracker KB, does not exceed $sizeLimitKB KB"
-    return $false
+#    return $false
 }
 
 
@@ -106,25 +170,62 @@ function Categorize-SourcePathObject {
     param()
 
     Get-ChildItem -Path $sourceFolder -Directory | ForEach-Object {
-        $isOver50KB = Get-FolderSizeKB $_ 
-        #Write-Host "Value of curfolder is $isOver50KB"
-        $folderName = $_.BaseName
-        $SetExtToZip =  if ( $isOver50KB ) { "zip" } else { "less than 50K" }
+        # $isOver50KB = Get-FolderSizeKB $_ 
+        $SizeCurFolder = Get-FolderSizeKB $_ 
+        #Write-Host "Value of curfolder is $SizeCurFolder, hypothetical size is $($SizeCurFolder.FolderSize)"
+        
+        #if ($SizeCurFolder.IsUnderMinSize)      { Write-Host "The size of $_ is under min size, which is $($SizeCurFolder.IsUnderMinSize)" }
+        # if ($SizeCurFolder.isBetweenMinAndMax)  { Write-Host "The size of $_ is between min and max size." }
+         if ($SizeCurFolder.IsOverMaxSize)       { Write-Host "The size of $_ is over max size." } else { Write-Host "it is not over max size" }
 
-        #Write-Host "value of SetExtToZip is $SetExtToZip"
+
+        #if ($SizeCurFolder.isBetweenMinAndMax) {
+        #    Write-Host "The size of $_ is between min and max size."
+        #}
 
 
-        [PSCustomObject]@{
-            FolderName = $folderName
-            FileExt    = $SetExtToZip
-            IsOver50KB = $isOver50KB
-        }
+
+#        $folderName = $_.BaseName
+#        $SetExtToZip =  if ( $isBetween50KB2GB ) { "zip" } else { "Either Under 50K or over 1.9GB" }
+#
+#        #Write-Host "value of SetExtToZip is $SetExtToZip"
+#
+#
+#        [PSCustomObject]@{
+#            FolderName = $folderName
+#            FileExt    = $SetExtToZip
+#            IsOver50KB = $isBetween50KB2GB
+#        }
     }
     
 }
 
-Get-FolderSizeKB "C:\Users\keith\Documents\Game-Library-Auto-Archiver\GameSource"
+# $DetermineSize = Get-FolderSizeKB $sourceFolder
+# $DetermineSize | Format-Table -AutoSize
 
-#$GetSizeStatus = Categorize-SourcePathObject
-#
+
+$GetSizeStatus = Categorize-SourcePathObject
 #$GetSizeStatus | Format-Table -AutoSize
+
+# I put this screen against my steam library folder path (184 folders of varoius sizes)
+# c:\Program Files (x86)\Steam\steamapps\common
+# and the total command took ~13 seconds; not sure if that's worth running in the background or not
+
+#$timeToSize = Measure-Command {
+   
+
+
+    #$GetSizeStatus = Categorize-SourcePathObject
+    #$GetSizeStatus | Format-Table -AutoSize
+
+#}
+
+#$roundedTime = [Math]::round($timeToSize.TotalSeconds, 1)
+
+#Write-Host "Total time to get the table took $roundedTime seconds."
+
+
+# $FolderDetermineMin = if ($FolderSizeKBTracker -gt $MinFileSizeLimitKB) { 
+#     Write-Host "For $resolvedPath, the value of FolderDetermineMin is $FolderDetermineMin"
+#     return $true  
+# } #else {  return $false }
