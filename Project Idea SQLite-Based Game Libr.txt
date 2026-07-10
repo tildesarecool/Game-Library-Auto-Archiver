@@ -1,0 +1,137 @@
+10:22 7/10/2026
+
+Project Idea: SQLite-Based Game Library Archive (Deduplicated)
+
+Context / Origin
+
+This idea came out of a separate project: a PowerShell script to compress subfolders of a
+Steam game library into individual zip files for archival, using
+[System.IO.Compression.ZipFile] to bypass the 2GB Compress-Archive limitation. While
+brainstorming that script, the idea of using SQLite instead of per-folder zip files came up
+as a different, unrelated project worth exploring separately later — likely in Python,
+given its more integrated SQLite support, rather than PowerShell.
+
+Core Idea
+
+Instead of compressing each game folder into its own independent .zip file, store the
+entire game library in a single shared SQLite database, using content-addressable
+storage (deduplication by file hash) rather than relying on compression ratio for space
+savings.
+
+Why Not Just Use Zip?
+
+The original zip-per-folder approach compresses each game folder independently. Since most
+game assets (textures, audio, packaged binaries) are already compressed, this yields
+negligible space savings from compression itself (~0.01% difference between max compression
+and no compression). SQLite's appeal here is not compression ratio — it's deduplication
+and structural benefits.
+
+Key Benefits of the SQLite Approach
+
+
+Deduplication across the whole library, not just within one archive.
+Steam libraries often contain real duplicate content across titles: shared engine
+binaries (Unity/Unreal redistributables), shared audio middleware, common installers
+(DirectX, VC++ runtimes), sometimes duplicate asset packs from the same publisher. Zip
+files are self-contained and can't dedupe across archives. A single database with
+content-addressable blobs (hash → blob) stores any given file's content exactly once,
+no matter how many games reference it.
+Transactional integrity "for free."
+SQLite's transaction journaling / WAL mode means a crash mid-write leaves the database in
+a consistent, previously-committed state — no need to hand-roll atomic temp-file-then-
+rename patterns for corruption protection (which was a separate concern in the zip-based
+script design).
+Queryable metadata without extraction.
+A manifest table alongside the blobs enables SQL queries like "which folders haven't been
+archived since I last played them" or "total archived size per game" — without needing to
+open/extract any archive.
+Incremental growth.
+New game folders can be added to the same long-lived database over time (not creating a
+new isolated container per folder like a new zip). The more games added, the more the
+dedup benefit compounds, since shared runtime/engine files get caught and stored only
+once.
+
+
+Proposed Schema (conceptual, two tables)
+
+
+files table — one row per unique file content:
+
+hash (primary key — hash of file content)
+blob (the actual file data)
+size
+
+
+
+manifest table — one row per file instance (i.e., per game, per path):
+
+game_folder_name
+relative_path (original relative path within the game folder, needed for restore)
+hash (foreign key → files.hash)
+original_size
+date_archived
+
+
+
+
+
+Two different games can have manifest rows pointing to the same files.hash if they share
+identical file content, while having completely different relative_path values — that's
+the mechanism that produces deduplication.
+
+Restore Process (bringing a game out of archive to play it)
+
+Restoring is the reverse of archiving — essentially a separate "Phase 3 in reverse":
+
+
+Query the manifest table for all rows belonging to the target game folder.
+Recreate the original relative folder structure at the target location (e.g., back into
+the Steam library path Steam expects).
+For each manifest row, look up the blob via hash in the files table and write it out
+to its original relative path/filename.
+
+
+The archived copy in the database is left untouched — restoring produces a playable copy
+on disk, it doesn't consume/remove the archived version.
+
+Adding New Folders Later
+
+Archiving a new game folder is: walk its files → hash each one → insert into files only if
+that hash doesn't already exist → insert rows into manifest for this folder regardless of
+whether the file content was new or already existed. This is naturally incremental — no
+special "reopen" step needed like there might be with a closed archive format.
+
+Known Tradeoffs vs. the Zip-Per-Folder Approach
+
+
+Single point of failure: one shared database means corruption threatens the entire
+archived library, whereas corruption in one .zip only loses that one folder. Zip's
+isolated failure domains are safer in this respect.
+Portability/familiarity: anyone can open a .zip natively in Windows Explorer;
+extracting from a custom SQLite archive requires tooling (SQLite CLI, a library, or a
+custom restore script).
+Tooling maturity: SQLite does have a built-in archive feature (the sqlar format via
+the sqlite3 CLI's .archive command, which does per-blob zlib compression), but it's
+narrower and less battle-tested for this use case than the zip ecosystem. PowerShell has
+no built-in cmdlet for it — would require shelling out to sqlite3.exe or scripting
+against a SQLite .NET/Python library.
+Backup strategy becomes important: given the single-point-of-failure risk, would want
+to take SQLite's integrity/backup tools seriously (PRAGMA integrity_check, periodic
+VACUUM INTO backups) in a way that isn't necessary with independent zip files.
+Bigger scope than originally planned: schema design, restore logic, and backup
+strategy make this a meaningfully larger project than just swapping in an alternate
+"Phase 3" of the original zip-based script.
+
+
+Suggested Language/Tooling for Future Exploration
+
+Python was identified as a better fit than PowerShell for this specific project, given more
+integrated/mature SQLite support (sqlite3 standard library, plus ecosystem tooling for
+hashing, chunked blob I/O, etc.).
+
+Status
+
+Parked for later. This is being treated as a separate, standalone project from the
+original PowerShell zip-archival script — not a variant/replacement of it. The zip-per-folder
+PowerShell script remains the active project using [System.IO.Compression.ZipFile] for
+straightforward, portable, per-folder archives.
