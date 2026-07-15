@@ -1,0 +1,103 @@
+﻿Game Library Auto Archiver — Phase Design Summary 2026
+Script file: gamelibautoarchiver.ps1 Environment: PowerShell 7.x, Windows 11 Pro Goal: Compress each immediate subfolder of a source game library into its own dated, platform-tagged zip file in a destination folder, skipping folders that don't need re-archiving.
+Architecture Overview
+An orchestrator calls each phase in order, passing the previous phase's output as the next phase's input. Phases report outcomes (success/failure/data) rather than making flow-control decisions themselves — the orchestrator is the only place that decides whether to stop, continue, or move to the next phase. This keeps phases independently testable and swappable (a phase can be replaced with an alternate implementation as long as it honors the same input/output contract).
+________________
+
+
+Phase 0 — Setup / Configuration
+Everything needed before any source/destination-specific work begins.
+* Parse CLI parameters ([CmdletBinding()] + typed param() block).
+* Load an optional config file (JSON), if present.
+* Merge settings using priority: explicit CLI parameter > config file value > hard-coded script default, resolved per-setting.
+   * Missing config file → not an error, fall through to defaults.
+   * Malformed config file → decide whether to hard-stop or silently ignore (open decision, leaning toward a clear error so typos aren't silently masked).
+   * Config file missing individual keys → each missing key falls through to default individually.
+* Global constants/defaults (e.g., 50KB size threshold, date format MMddyyyy, platform-tag list).
+* One-time setup: load System.IO.Compression.FileSystem assembly, initialize logging.
+* Hard environment guard, run before anything else: PowerShell version check. Not part of the orchestrator's "log and continue" pattern — this is a fatal, immediate stop if failed (nothing downstream can be trusted otherwise). Likely enforced via #Requires -Version 7.0 at the top of the script, possibly reinforced with an explicit $PSVersionTable check for a clearer error message.
+* Comment-based help block (.SYNOPSIS, .DESCRIPTION, .PARAMETER, .EXAMPLE, etc.) lives here/above param() for Get-Help support.
+* .PSScriptInfo metadata block (version, author, tags, etc.) for eventual PowerShell Gallery publishing — separate from the help comment block.
+________________
+
+
+Phase 1 — Input Gathering & Path Validation
+Validates that the source/destination are usable before any filtering or compression logic runs.
+* Resolve source and destination paths to full, absolute paths (handles relative paths, trailing slashes).
+* Confirm source exists and is a directory (not a file).
+* Confirm destination exists (or decide whether to auto-create it).
+* Confirm source ≠ destination, and destination is not nested inside source.
+* Confirm read access to source, write access to destination.
+* Confirm source has at least one subfolder (otherwise nothing to do).
+* Resolve the platform tag once here (e.g., "steam", "gog", "epic", "amazon"), since it's a property of the source path itself — computed once per run, not recomputed independently in Phase 2 or Phase 3. This resolved value gets carried forward in the context object passed to later phases.
+* Reports success/failure with a reason back to the orchestrator — never calls exit itself. A failure here is fatal (orchestrator logs and stops the run).
+________________
+
+
+Phase 2 — Filtering ("Filter Out" Phase)
+Starts with all immediate subfolders of source only (not nested subfolders, not files) and narrows that down to a final "to compress" list, plus an "excluded" list with reasons (for logging/reporting).
+Only immediate subfolders of source are ever considered — nothing inside folder1 or folder2 themselves is touched.
+For each subfolder, in cheapest-check-first order (for efficiency — cheap checks should short-circuit before expensive ones):
+1. Already-archived check (cheap, run first):
+
+   * Sanitize the folder name (strip ™/®-type symbols, replace spaces with underscores) using one shared sanitizing function — the same function is used wherever a name needs to become part of a filename, so Phase 2's search and Phase 3's file creation never disagree.
+   * Build a search pattern using the sanitized name and resolved platform tag: <sanitizedName>_*_<platform>.zip.
+   * Search destination for matches.
+   * No matches → folder is not yet archived, proceeds to the next check.
+   * Matches found → parse each match's embedded date-code (format MMddyyyy) into a DateTime using ParseExact with InvariantCulture (predictable, not locale-dependent). Unparseable/invalid date-codes are logged as anomalies and excluded from the comparison rather than halting the run.
+   * Take the maximum (most recent) parsed date among valid matches.
+   * Compare against the folder's LastWriteTime.Date (time-of-day stripped from both sides — this is what fixes the original "midnight vs. 4:26pm never matches" bug; no zip file timestamps need to be modified).
+   * If the most recent zip's date is ≥ the folder's last-write date → folder is already covered, excluded (reason: already archived).
+   * If the folder's last-write date is newer than the most recent zip → folder has changed since last backup, proceeds to the next check.
+   * (Known caveat, accepted for now: a folder's own LastWriteTime doesn't always update when a deeply nested file changes in place, e.g., an in-place patch. A fully reliable version would need the max LastWriteTime across all files recursively — deferred as a "revisit if it causes a missed update" item.)
+   2. Minimum size check (more expensive, run second — only for folders that passed check 1):
+
+      * Recursively sum file sizes within the subfolder, stopping as soon as the running total crosses 50KB (early exit for efficiency).
+      * Crosses 50KB → folder passes, proceeds to compress list.
+      * Never crosses it (includes genuinely empty folders as a natural zero-byte case; no separate "is-empty" check needed) → excluded (reason: below minimum size).
+Out of scope for Phase 2 (deliberate simplifications):
+      * Hidden files/folders — treated as-is, no special handling.
+      * Junction points/reparse points — not accounted for; flagged only as a disclaimer in the script's intro/header comments.
+      * Destination free-space estimation — skipped as not worth the cost given folders up to ~150GB.
+      * Locked/in-use files — not determined here (a pre-check can't be authoritative due to time-of-check/time-of-use gaps); real handling belongs in Phase 3 around the actual compression attempt. An advisory-only check here is optional and would be purely informational, not a pass/fail decision.
+Output: two lists — to-compress and excluded (each excluded entry tagged with its reason) — handed to the orchestrator, which logs the excluded list before proceeding.
+(Deferred hypothetical feature, not yet in scope: an interactive review/override step could sit between Phase 2 and Phase 3 — displaying both lists as a numbered menu and letting the user manually move folders between them before Phase 3 runs. Phase 3 would need zero changes to support this, since it only ever consumes a finished to-compress list regardless of how that list was produced.)
+________________
+
+
+Phase 3 — Compression
+Takes the to-compress list and produces actual zip files in destination.
+      * Uses [System.IO.Compression.ZipFile]::CreateFromDirectory() (assembly loaded in Phase 0) instead of Compress-Archive, to avoid the legacy 2GB limitation.
+      * Filename generation: <sanitizedFolderName>_<todayDateMMddyyyy>_<platform>.zip — built using the same sanitizing function and the same resolved platform tag from Phase 1, so the name Phase 3 creates is guaranteed to match what Phase 2's existence check would search for on a future run.
+      * Atomic write pattern to guard against half-finished archives:
+      * Compress to a temp/working filename in the destination folder itself (e.g., <name>.zip.partial) — not in %TEMP%, to avoid a cross-volume copy during the final commit step and to sidestep needing to validate %TEMP%'s drive.
+      * Only rename to the final real filename after CreateFromDirectory completes without error. The rename is a same-volume, effectively instant operation.
+      * A crash mid-compression leaves an orphaned .partial file, never a corrupted file under the real name. A cleanup sweep for leftover .partial files from a prior interrupted run is worth doing early in a run (destination sweep, likely late Phase 1 or early Phase 2).
+      * Locked/in-use file handling: wrapped in try/catch around the actual compression call (this is the authoritative point of handling, per the time-of-check/time-of-use reasoning above) — behavior on failure (skip file, skip whole folder, retry, abort) still to be decided.
+      * Compression level: exposed as a setting (Optimal / Fastest / NoCompression) — largely moot for this specific library, since Steam game assets are already compressed and yield negligible difference between levels, but kept configurable.
+      * Explicitly deferred as future "eye candy"/stretch goals, not needed for a working first version:
+      * Write-Progress / progress reporting.
+      * Parallelism (e.g., ForEach-Object -Parallel) — sequential is safer for now given some folders may be up to 150GB (avoids disk thrashing).
+      * Post-compression verification (e.g., integrity check) — likely a user preference/switch later, since it could add meaningful time to a run.
+      * Output: per-folder results (success/fail, error details, size before/after) fed back to the orchestrator for the final run summary/log.
+________________
+
+
+Naming Convention (finalized)
+<sanitizedFolderName>_<MMddyyyy>_<platformTag>.zip
+
+
+Example: bit_Dungeon_III_07122026_steam.zip
+      * Sanitization: strip ™/®-type symbols, replace spaces with underscores.
+      * Date: the date the script runs (captured once at script start), not any property of the source folder — the folder's own timestamp is only ever used for the "does this folder need a new backup" comparison in Phase 2, never for naming.
+      * Platform tag resolved once in Phase 1 from the source path (e.g., via a Get-PlatformShortName-style function), carried through the context object rather than recomputed per-folder or per-phase.
+      * Different platforms for a same-named game (e.g., Steam vs. Amazon copies) never collide — the platform tag is part of both the search pattern and the generated filename, so each platform's archive history is tracked independently.
+      * Multiple dated zips for the same folder+platform can coexist in destination (versioned backups over time) — Phase 2's existence check always compares against the most recent one only.
+________________
+
+
+Code-Quality Notes Carried Forward
+      * Functions use approved PowerShell verbs (Test-, Invoke-, Get-, etc.) — required for PSScriptAnalyzer/Gallery compliance (e.g., Test- rather than Validate- for boolean-returning checks).
+      * Functions take parameters explicitly rather than reaching into script-scope variables (e.g., Get-PlatformShortName takes a -Path parameter rather than reading $sourceFolder from the enclosing scope) — supports testability and reuse.
+      * No exit calls inside phase functions — phases report success/failure back to the orchestrator, which is the only place that decides whether to stop the run.
+      * [ordered] hashtables used where match order could matter (e.g., the platform lookup table), since regular @{} hashtables don't guarantee key order.
