@@ -21,14 +21,18 @@
 #########################################################################################
 #Requires -Version 7.0
 
+<#PSScriptInfo
+.version 1.0.0
+.guid 12345678-1234-1234-1234-123456789012
+.author Tildes
+.tags Game Library Archiver, Steam, GOG, Epic Games, Amazon Games
+#>
 
-
-<# 
-.PSScriptInfo
+<#
 .SYNOPSIS
     Compresses Steam (gog, amazon, epic, etc.) game folders into dated zip archives with parallel processing and duplicate management.
 .DESCRIPTION
-    SteamZipper scans a ...
+    Game Lib Auto Archiver scans a ...
 .PARAMETER sourceFolder
     The folder containing the Steam game folders to be archived.
 .PARAMETER destinationFolder
@@ -38,7 +42,7 @@
 
 
 
-[CmdletBinding(DefaultParameterSetName="Manual", SupportsShouldProcess=$true)]
+[CmdletBinding(DefaultParameterSetName="Manual")] #, SupportsShouldProcess=$true)]
 param (
     [string]$sourceFolder,
     [string]$destinationFolder
