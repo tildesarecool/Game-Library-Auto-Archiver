@@ -21,6 +21,8 @@
 #########################################################################################
 #Requires -Version 7.0
 
+
+
 <# 
 .PSScriptInfo
 .SYNOPSIS
@@ -52,6 +54,7 @@ if ([string]::IsNullOrWhiteSpace($PSScriptRoot)) {
     Write-Host "Unable to establish the path of this script, exiting..." -ForegroundColor Red
     exit 1
 }
+Start-Transcript -Path $PSScriptRoot\Start-GameLibraryArchive-log.txt -Append
 
 
 $minFolderSizeKB = 512 # Minimum folder size in KB to be considered for archiving (arbitrary value, can be adjusted as needed)
@@ -79,3 +82,9 @@ function Get-PlatformShortName {
     }
     return "unknown"  # Default value if no match
 }
+
+
+
+
+# very bottom of orchestrator/last line: stop transcript, so that the transcript is closed and saved properly at the end of the script execution.
+Stop-Transcript
