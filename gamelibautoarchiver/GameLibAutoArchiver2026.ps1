@@ -77,9 +77,14 @@ $PreferredDateFormat = "MMddyyyy" # date for the archive name, can be adjusted a
 # won't be offering alternative compression formats at this time, but if I do, this is where the user would specify it. 
 # CompressionExtension = "zip"
 
-$Phase0 = @{
-    "minFolderSizeKB" = $minFolderSizeKB
-    "PreferredDateFormat" = $PreferredDateFormat
+function Invoke-Phase0 {
+    $config = @{
+        "minFolderSizeKB" = $minFolderSizeKB
+        "PreferredDateFormat" = $PreferredDateFormat
+        "sourceFolder" = $sourceFolder
+        "destinationFolder" = $destinationFolder
+    }
+return $config
 }
 
 
@@ -103,37 +108,85 @@ function Get-PlatformShortName {
 }
 
 # Phase functions will be defined here, such as Phase1, Phase2, Phase3, and Phase4. Each phase will handle a specific part of the archiving process.
-function Phase1 {
+
+function Invoke-Phase0 {
+    param (
+        [int]$MinFolderSizeKB,
+        [string]$PreferredDateFormat,
+        [string]$SourceFolder,
+        [string]$DestinationFolder
+    )
+
+    $config = @{
+        MinFolderSizeKB     = $MinFolderSizeKB
+        PreferredDateFormat = $PreferredDateFormat
+        SourceFolder        = $SourceFolder
+        DestinationFolder   = $DestinationFolder
+    }
+
+    return $config
+}
+
+function Invoke-Phase1 {
     param (
         [hashtable]$Config
     )
+
+    # Implement the logic for Phase 1 here, using the parameters from $Config
+    # For example, you might want to validate the source and destination folders,
+    # check for required permissions, etc.
+
     try {
-        $platformShortName = Get-PlatformShortName
-        Write-Host "Identified platform: $platformShortName" -ForegroundColor Cyan
+        # ... do the actual work ...
+
+        if (<some validation failed>) {
+            return @{ Success = $false; Data = $null; Reason = "explain why" }
+        }
+
+        # work succeeded
+        return @{ Success = $true; Data = <whatever Phase2 will need>; Reason = $null }
     }
     catch {
-        Write-Host "Error identifying platform: $_" -ForegroundColor Red
-        return @{ Success = $false; Reason = "Error identifying platform: $_" }
+        # catches unexpected/thrown errors, not just your own validation checks
+        return @{ Success = $false; Data = $null; Reason = $_.Exception.Message }
     }
-    # Phase 1 logic goes here
-    # For example, scanning the source folder and identifying folders to archive
-    Write-Host "Phase 1: Scanning source folder for game folders to archive..." -ForegroundColor Green
-    # Simulate success for demonstration purposes
-    return @{ Success = $true; Reason = "" }
 }
 
+
+# hypothetical psuedo-code for a phase function, which would be implemented in a similar manner for each phase of the script. Each phase function would take the necessary input parameters, perform its specific tasks, and return a result indicating success or failure, along with any relevant data or error messages.
+#function Phase1 {
+#    param ( <whatever this phase needs as input> )
+#
+#    try {
+#        # ... do the actual work ...
+#
+#        if ( <some validation failed> ) {
+#            return @{ Success = $false; Data = $null; Reason = "explain why" }
+#        }
+#
+#        # work succeeded
+#        return @{ Success = $true; Data = <whatever Phase2 will need>; Reason = $null }
+#    }
+#    catch {
+#        # catches unexpected/thrown errors, not just your own validation checks
+#        return @{ Success = $false; Data = $null; Reason = $_.Exception.Message }
+#    }
+#}
 
 
 ######################## Orchestrator Function Calls #############################
 
-$config = Phase0
+$config = Invoke-Phase0 -MinFolderSizeKB $minFolderSizeKB `
+                         -PreferredDateFormat $PreferredDateFormat `
+                         -SourceFolder $sourceFolder `
+                         -DestinationFolder $destinationFolder
 
-# $phase 1
-$phase1Result = Phase1 -Config $config 
+$phase1Result = Invoke-Phase1 -Config $config
 if (-not $phase1Result.Success) {
     Write-Host "Phase 1 failed, exiting: $($phase1Result.Reason)" -ForegroundColor Red
     exit 1
 }
+
 
 
 
