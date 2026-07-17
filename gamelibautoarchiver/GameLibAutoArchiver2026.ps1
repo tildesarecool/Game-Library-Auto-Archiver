@@ -25,12 +25,12 @@
 .version 1.0.0
 .guid 12345678-1234-1234-1234-123456789012
 .author Tildes
-.tags Game Library Archiver, Steam, GOG, Epic Games, Amazon Games
+.tags "Game Library Archiver", "Steam", "GOG", "Epic Games", "Amazon Games"
 #>
 
 <#
 .SYNOPSIS
-    Compresses Steam (gog, amazon, epic, etc.) game folders into dated zip archives with parallel processing and duplicate management.
+    Compresses Steam (gog, amazon, epic, etc.) game folders into dated zip archives and duplicate management.
 .DESCRIPTION
     Game Lib Auto Archiver scans a ...
 .PARAMETER sourceFolder
@@ -42,7 +42,7 @@
 
 
 
-[CmdletBinding(DefaultParameterSetName="Manual")] #, SupportsShouldProcess=$true)]
+[CmdletBinding(DefaultParameterSetName="Manual", SupportsShouldProcess=$true)]
 param (
     [string]$sourceFolder,
     [string]$destinationFolder
@@ -58,7 +58,15 @@ if ([string]::IsNullOrWhiteSpace($PSScriptRoot)) {
     Write-Host "Unable to establish the path of this script, exiting..." -ForegroundColor Red
     exit 1
 }
-Start-Transcript -Path $PSScriptRoot\Start-GameLibraryArchive-log.txt -Append
+try {
+    # Start the transcript to log the script execution
+    Start-Transcript -Path "$PSScriptRoot\Start-GameLibraryArchive-log.txt" -Append
+}
+catch {
+    Write-Host "Failed to start transcript: $_" -ForegroundColor Red
+    exit 1
+}
+#Start-Transcript -Path $PSScriptRoot\Start-GameLibraryArchive-log.txt -Append
 
 
 $minFolderSizeKB = 512 # Minimum folder size in KB to be considered for archiving (arbitrary value, can be adjusted as needed)
@@ -68,6 +76,13 @@ $PreferredDateFormat = "MMddyyyy" # date for the archive name, can be adjusted a
 
 # won't be offering alternative compression formats at this time, but if I do, this is where the user would specify it. 
 # CompressionExtension = "zip"
+
+$Phase0 = @{
+    "minFolderSizeKB" = $minFolderSizeKB
+    "PreferredDateFormat" = $PreferredDateFormat
+}
+
+
 
 
 function Get-PlatformShortName {
@@ -87,8 +102,47 @@ function Get-PlatformShortName {
     return "unknown"  # Default value if no match
 }
 
+# Phase functions will be defined here, such as Phase1, Phase2, Phase3, and Phase4. Each phase will handle a specific part of the archiving process.
+function Phase1 {
+    param (
+        [hashtable]$Config
+    )
+    try {
+        $platformShortName = Get-PlatformShortName
+        Write-Host "Identified platform: $platformShortName" -ForegroundColor Cyan
+    }
+    catch {
+        Write-Host "Error identifying platform: $_" -ForegroundColor Red
+        return @{ Success = $false; Reason = "Error identifying platform: $_" }
+    }
+    # Phase 1 logic goes here
+    # For example, scanning the source folder and identifying folders to archive
+    Write-Host "Phase 1: Scanning source folder for game folders to archive..." -ForegroundColor Green
+    # Simulate success for demonstration purposes
+    return @{ Success = $true; Reason = "" }
+}
+
+
+
+######################## Orchestrator Function Calls #############################
+
+$config = Phase0
+
+# $phase 1
+$phase1Result = Phase1 -Config $config 
+if (-not $phase1Result.Success) {
+    Write-Host "Phase 1 failed, exiting: $($phase1Result.Reason)" -ForegroundColor Red
+    exit 1
+}
+
 
 
 
 # very bottom of orchestrator/last line: stop transcript, so that the transcript is closed and saved properly at the end of the script execution.
-Stop-Transcript
+try {
+    Stop-Transcript
+}
+catch {
+    Write-Host "Failed to stop transcript: $_" -ForegroundColor Red
+    exit 1
+}
