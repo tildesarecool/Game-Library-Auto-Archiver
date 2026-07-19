@@ -117,6 +117,7 @@ function Invoke-Phase0 {
         [string]$DestinationFolder
     )
 
+
     $config = @{
         MinFolderSizeKB     = $MinFolderSizeKB
         PreferredDateFormat = $PreferredDateFormat
@@ -127,30 +128,73 @@ function Invoke-Phase0 {
     return $config
 }
 
+
+# phase1 stub / placeholder
 function Invoke-Phase1 {
     param (
         [hashtable]$Config
     )
 
-    # Implement the logic for Phase 1 here, using the parameters from $Config
-    # For example, you might want to validate the source and destination folders,
-    # check for required permissions, etc.
 
-    try {
-        # ... do the actual work ...
+    Write-Host "Phase 1 stub called" 
 
-        if (<some validation failed>) {
-            return @{ Success = $false; Data = $null; Reason = "explain why" }
+
+    return @{
+        Success = $true
+        Data = @{
+            ValidatedSourcePath      = $Config.SourceFolder
+            ValidatedDestinationPath = $Config.DestinationFolder
+            PlatformTag              = "stubtag"
         }
-
-        # work succeeded
-        return @{ Success = $true; Data = <whatever Phase2 will need>; Reason = $null }
-    }
-    catch {
-        # catches unexpected/thrown errors, not just your own validation checks
-        return @{ Success = $false; Data = $null; Reason = $_.Exception.Message }
-    }
+        Reason = $null
+    }  
 }
+
+
+
+
+### Invoke-Phase2 (STUB)
+function Invoke-Phase2 {
+    param (
+        [hashtable]$ValidatedPaths
+    )
+
+
+    Write-Host "Phase 2 stub called" 
+
+
+    return @{
+        success = $false # just a test
+
+#        Success = $true
+        Data    = @{
+            CompressedFilesList = @() # empty as part of placeholder
+            ExcludedList        = @() 
+        }
+        Reason = $null
+    }  
+}
+
+
+function Invoke-Phase3 {
+    param (
+        [array]$CompressList
+    )
+
+
+    Write-Host "Phase 3 stub called" 
+
+
+    return @{
+        Success = $true
+        Data    = @{
+            ArchivedFilesList = 0
+            ErrorsList        = @() 
+        }
+        Reason = $null
+    }  
+}
+
 
 
 # hypothetical psuedo-code for a phase function, which would be implemented in a similar manner for each phase of the script. Each phase function would take the necessary input parameters, perform its specific tasks, and return a result indicating success or failure, along with any relevant data or error messages.
@@ -176,26 +220,62 @@ function Invoke-Phase1 {
 
 ######################## Orchestrator Function Calls #############################
 
-$config = Invoke-Phase0 -MinFolderSizeKB $minFolderSizeKB `
-                         -PreferredDateFormat $PreferredDateFormat `
-                         -SourceFolder $sourceFolder `
-                         -DestinationFolder $destinationFolder
-
-$phase1Result = Invoke-Phase1 -Config $config
-if (-not $phase1Result.Success) {
-    Write-Host "Phase 1 failed, exiting: $($phase1Result.Reason)" -ForegroundColor Red
-    exit 1
-}
-
-
-
-
-
-# very bottom of orchestrator/last line: stop transcript, so that the transcript is closed and saved properly at the end of the script execution.
 try {
-    Stop-Transcript
+    $config = Invoke-Phase0 -MinFolderSizeKB $minFolderSizeKB `
+                             -PreferredDateFormat $PreferredDateFormat `
+                             -SourceFolder $sourceFolder `
+                             -DestinationFolder $destinationFolder
+
+    $phase1Result = Invoke-Phase1 -Config $config
+    if (-not $phase1Result.Success) {
+        $reasonText = if ($phase1Result.Reason) { 
+            $phase1Result.Reason 
+        } else { 
+            "Unknown error in Phase 1" 
+        }
+        Write-Host "Phase 1 failed, exiting: $reasonText" -ForegroundColor Red
+        Write-Error $reasonText
+        exit 1
+    }
+
+    $phase2Result = Invoke-Phase2 -ValidatedPaths $phase1Result.Data
+    if (-not $phase2Result.Success) {
+        $reasonText = if ($phase2Result.Reason) { 
+            $phase2Result.Reason 
+        } else { 
+            "Unknown error in Phase 2" 
+        }
+        Write-Host "Phase 2 failed, exiting: $reasonText" -ForegroundColor Red
+        Write-Error $reasonText
+        exit 1
+    }
+    if ($phase2Result.Data.CompressedFilesList.Count -eq 0) {
+        Write-Host "No files to compress, exiting." -ForegroundColor Yellow
+        exit 0
+    }
+
+
+    $phase3Result = Invoke-Phase3 -CompressList $phase2Result.Data.CompressedFilesList
+    if (-not $phase3Result.Success) {
+        $reasonText = if ($phase3Result.Reason) { 
+            $phase3Result.Reason 
+        } else { 
+            "Unknown error in Phase 3" 
+        }
+        Write-Host "Phase 3 failed, exiting: $reasonText" -ForegroundColor Red
+        Write-Error $reasonText
+        exit 1
+    }
+
+    Write-Host "Archiving completed successfully. Archived $($phase3Result.Data.ArchivedFilesList) files." -ForegroundColor Green
+    exit 0
 }
-catch {
-    Write-Host "Failed to stop transcript: $_" -ForegroundColor Red
-    exit 1
+finally {
+    # very bottom of orchestrator/last line: stop transcript, so that the transcript is closed and saved properly at the end of the script execution.
+    try {
+        Stop-Transcript
+    }
+    catch {
+        Write-Host "Failed to stop transcript: $_" -ForegroundColor Red
+    }
 }
