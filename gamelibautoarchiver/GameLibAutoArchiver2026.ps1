@@ -136,7 +136,46 @@ function Invoke-Phase1 {
     )
 
 
+# Phase 1 — Input Gathering & Path Validation
+# Validates that the source/destination are usable before any filtering or compression logic runs.
+# * Resolve source and destination paths to full, absolute paths (handles relative paths, trailing slashes).
+# * Confirm source exists and is a directory (not a file).
+# * Confirm destination exists (or decide whether to auto-create it).
+# * Confirm source ≠ destination, and destination is not nested inside source.
+# * Confirm read access to source, write access to destination.
+# * Confirm source has at least one subfolder (otherwise nothing to do).
+# * Resolve the platform tag once here (e.g., "steam", "gog", "epic", "amazon"), since it's a property of the source path itself — 
+#      computed once per run, not recomputed independently in Phase 2 or Phase 3. This resolved value gets carried forward in the context object passed to later phases.
+# * Reports success/failure with a reason back to the orchestrator — never calls exit itself. A failure here is fatal (orchestrator logs and stops the run).
+
+
     Write-Host "Phase 1 stub called" 
+
+    $srcFolderCount = Get-ChildItem -Path $Config.SourceFolder -Directory 
+
+    try {
+        if ($srcFolderCount) {
+            continue
+        }
+        elseif ($srcFolderCount.Count -ge 1) {
+            continue
+        } elseif ( Get-ChildItem -Path $Config.SourceFolder -Directory  ) {
+            continue
+        } #elseif (<#condition#>) {
+            <# Action when this condition is true #>
+        #}
+
+    }                                            
+       catch {
+        $reasonText = "No subfolders found in source folder: $($Config.SourceFolder). Error: $_"
+        write-host $reasonText -ForegroundColor Red
+        write-error $reasonText
+        return @{
+            Success = $false
+            Data    = $null
+            Reason  = "Error accessing source folder: $($Config.SourceFolder). Error: $_"
+        }
+    }
 
 
     return @{
@@ -164,9 +203,9 @@ function Invoke-Phase2 {
 
 
     return @{
-        success = $false # just a test
+#        success = $false # just a test
 
-#        Success = $true
+        Success = $true
         Data    = @{
             CompressedFilesList = @() # empty as part of placeholder
             ExcludedList        = @() 
