@@ -149,25 +149,57 @@ function Invoke-Phase1 {
 # * Reports success/failure with a reason back to the orchestrator — never calls exit itself. A failure here is fatal (orchestrator logs and stops the run).
 
 
+#function Get-PlatformShortName {
+    # phase 1 function to determine the platform short name based on the source folder path
+    $platforms = @{
+        "epic games"   = "epic"
+        "Amazon Games" = "amazon"
+        "GOG"          = "gog"
+        "Steam"        = "steam"
+        #"Origin"      = "origin"
+    }
+    foreach ($platform in $platforms.Keys) {
+        if ($sourceFolder -like "*$platform*") {
+            $ResolvedPlatform = $platforms[$platform]
+        } else {
+            $ResolvedPlatform = "unknown"
+        }
+    }
+ #   return "unknown"  # Default value if no match
+#}
+
+    $config.sourceFolder      = $config.sourceFolder.Trim()
+    $config.destinationFolder = $config.destinationFolder.Trim()   
+
     Write-Host "Phase 1 stub called" 
 
-    $srcFolderCount = Get-ChildItem -Path $Config.SourceFolder -Directory 
-
+#    $srcFolderCount = Get-ChildItem -Path $Config.SourceFolder -Directory 
+    $srcFolderCount = $srcFolderCount.Count
     try {
-        if ($srcFolderCount) {
-            continue
+        if (-not (Test-Path -Path $Config.SourceFolder -PathType Container)) {
+            throw "Source folder does not exist or is not a directory: $($Config.SourceFolder)"
         }
-        elseif ($srcFolderCount.Count -ge 1) {
-            continue
-        } elseif ( Get-ChildItem -Path $Config.SourceFolder -Directory  ) {
-            continue
-        } #elseif (<#condition#>) {
-            <# Action when this condition is true #>
-        #}
-
-    }                                            
+        if (-not (Test-Path -Path $Config.DestinationFolder -PathType Container)) {
+            throw "Destination folder does not exist or is not a directory: $($Config.DestinationFolder)"
+        }
+        if ($Config.SourceFolder -eq $Config.DestinationFolder) {
+            throw "Source and destination folders cannot be the same."
+        }
+        if ($Config.DestinationFolder -like "$($Config.SourceFolder)*") {
+            throw "Destination folder cannot be nested inside source folder."
+        }
+        if ( -not (Out-File -FilePath $Config.DestinationFolder\test.txt ) ) {
+            throw "Could not create test file in destination folder."
+        }
+        if ($srcFolderCount -eq 0) {
+            throw "Source folder contains no subfolders to process."
+        }        if (-not (Test-Path -Path $Config.SourceFolder -PathType Container)) {
+            throw "Source folder does not exist or is not a directory: $($Config.SourceFolder)"
+        }
+    }
        catch {
-        $reasonText = "No subfolders found in source folder: $($Config.SourceFolder). Error: $_"
+        #$reasonText = "Could not continue for reason: $($Config.SourceFolder). Error: $_"
+        $reasonText = "Could not continue for because of Error: $_"
         write-host $reasonText -ForegroundColor Red
         write-error $reasonText
         return @{
@@ -183,7 +215,7 @@ function Invoke-Phase1 {
         Data = @{
             ValidatedSourcePath      = $Config.SourceFolder
             ValidatedDestinationPath = $Config.DestinationFolder
-            PlatformTag              = "stubtag"
+            PlatformTag              = $ResolvedPlatform
         }
         Reason = $null
     }  

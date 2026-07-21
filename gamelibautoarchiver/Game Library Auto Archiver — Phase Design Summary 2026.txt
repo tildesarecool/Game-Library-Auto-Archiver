@@ -14,7 +14,7 @@ Everything needed before any source/destination-specific work begins.
    * Malformed config file → decide whether to hard-stop or silently ignore (open decision, leaning toward a clear error so typos aren't silently masked).
    * Config file missing individual keys → each missing key falls through to default individually.
 * Global constants/defaults (e.g., 50KB size threshold, date format MMddyyyy, platform-tag list).
-* One-time setup: load System.IO.Compression.FileSystem assembly, initialize logging.
+[STRIKEOUT]* One-time setup: load System.IO.Compression.FileSystem assembly, initialize logging.[/STRIKEOUT]
 * Hard environment guard, run before anything else: PowerShell version check. Not part of the orchestrator's "log and continue" pattern — this is a fatal, immediate stop if failed (nothing downstream can be trusted otherwise). Likely enforced via #Requires -Version 7.0 at the top of the script, possibly reinforced with an explicit $PSVersionTable check for a clearer error message.
 * Comment-based help block (.SYNOPSIS, .DESCRIPTION, .PARAMETER, .EXAMPLE, etc.) lives here/above param() for Get-Help support.
 * .PSScriptInfo metadata block (version, author, tags, etc.) for eventual PowerShell Gallery publishing — separate from the help comment block.
@@ -23,14 +23,14 @@ ________________
 
 Phase 1 — Input Gathering & Path Validation
 Validates that the source/destination are usable before any filtering or compression logic runs.
-* Resolve source and destination paths to full, absolute paths (handles relative paths, trailing slashes).
-* Confirm source exists and is a directory (not a file).
-* Confirm destination exists (or decide whether to auto-create it).
-* Confirm source ≠ destination, and destination is not nested inside source.
-* Confirm read access to source, write access to destination.
-* Confirm source has at least one subfolder (otherwise nothing to do).
-* Resolve the platform tag once here (e.g., "steam", "gog", "epic", "amazon"), since it's a property of the source path itself — computed once per run, not recomputed independently in Phase 2 or Phase 3. This resolved value gets carried forward in the context object passed to later phases.
-* Reports success/failure with a reason back to the orchestrator — never calls exit itself. A failure here is fatal (orchestrator logs and stops the run).
+?* Resolve source and destination paths to full, absolute paths (handles relative paths, trailing slashes).
+[completed] Confirm source exists and is a directory (not a file).
+[completed] Confirm destination exists (or decide whether to auto-create it). (no auto-create)
+[completed] Confirm source ≠ destination, and destination is not nested inside source.
+[completed] Confirm read access to source, write access to destination.
+[completed] Confirm source has at least one subfolder (otherwise nothing to do).
+[completed] Resolve the platform tag once here (e.g., "steam", "gog", "epic", "amazon"), since it's a property of the source path itself — computed once per run, not recomputed independently in Phase 2 or Phase 3. This resolved value gets carried forward in the context object passed to later phases.
+[completed] Reports success/failure with a reason back to the orchestrator — never calls exit itself. A failure here is fatal (orchestrator logs and stops the run).
 ________________
 
 
