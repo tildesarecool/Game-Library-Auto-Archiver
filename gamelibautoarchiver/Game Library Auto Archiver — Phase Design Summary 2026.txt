@@ -23,7 +23,7 @@ ________________
 
 Phase 1 — Input Gathering & Path Validation
 Validates that the source/destination are usable before any filtering or compression logic runs.
-?* Resolve source and destination paths to full, absolute paths (handles relative paths, trailing slashes).
+[completed] Resolve source and destination paths to full, absolute paths (handles relative paths, trailing slashes).
 [completed] Confirm source exists and is a directory (not a file).
 [completed] Confirm destination exists (or decide whether to auto-create it). (no auto-create)
 [completed] Confirm source ≠ destination, and destination is not nested inside source.

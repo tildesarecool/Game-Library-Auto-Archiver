@@ -172,29 +172,41 @@ function Invoke-Phase1 {
     $config.destinationFolder = $config.destinationFolder.Trim()   
 
     Write-Host "Phase 1 stub called" 
+   $SrcFolderCount =  Get-ChildItem -Path $sourceFolder -Directory
 
-#    $srcFolderCount = Get-ChildItem -Path $Config.SourceFolder -Directory 
-    $srcFolderCount = $srcFolderCount.Count
+#    $srcFolderCount = $srcFolderCount.Count
+#    write-host "Source folder count is " $srcFolderCount.count
+
+    $resolvedSource         = (Resolve-Path -path $Config.sourceFolder -ErrorAction Stop).Path
+    $resolvedDestination    = (Resolve-Path -path $Config.destinationFolder -ErrorAction Stop).Path
+
     try {
-        if (-not (Test-Path -Path $Config.SourceFolder -PathType Container)) {
-            throw "Source folder does not exist or is not a directory: $($Config.SourceFolder)"
+        if (-not ($resolvedSource) -or -not ($resolvedDestination)) {
+            throw "Source folder or destination folder does not exist: $($resolvedSource), $($resolvedDestination)"
         }
-        if (-not (Test-Path -Path $Config.DestinationFolder -PathType Container)) {
-            throw "Destination folder does not exist or is not a directory: $($Config.DestinationFolder)"
+        if (-not (Test-Path -Path $resolvedSource -PathType Container)) {
+            throw "Source folder does not exist or is not a directory: $($resolvedSource)"
         }
-        if ($Config.SourceFolder -eq $Config.DestinationFolder) {
+        if (-not (Test-Path -Path $resolvedDestination -PathType Container)) {
+            throw "Destination folder does not exist or is not a directory: $($resolvedDestination)"
+        }
+        if ($resolvedSource -eq $resolvedDestination) {
             throw "Source and destination folders cannot be the same."
         }
-        if ($Config.DestinationFolder -like "$($Config.SourceFolder)*") {
+        if ($resolvedDestination -like "$($resolvedSource)*") {
             throw "Destination folder cannot be nested inside source folder."
         }
-        if ( -not (Out-File -FilePath $Config.DestinationFolder\test.txt ) ) {
+#        if ( -not (Out-File -FilePath $Config.DestinationFolder\test.txt ) ) {
+#            throw "Could not create test file in destination folder."
+#        }
+        if (  (Out-File -FilePath $resolvedDestination\test.txt ) ) {
             throw "Could not create test file in destination folder."
         }
         if ($srcFolderCount -eq 0) {
+            
             throw "Source folder contains no subfolders to process."
-        }        if (-not (Test-Path -Path $Config.SourceFolder -PathType Container)) {
-            throw "Source folder does not exist or is not a directory: $($Config.SourceFolder)"
+        }        if (-not (Test-Path -Path $resolvedSource -PathType Container)) {
+            throw "Source folder does not exist or is not a directory: $($resolvedSource)"
         }
     }
        catch {
@@ -205,7 +217,7 @@ function Invoke-Phase1 {
         return @{
             Success = $false
             Data    = $null
-            Reason  = "Error accessing source folder: $($Config.SourceFolder). Error: $_"
+            Reason  = "Error accessing source folder: $($resolvedSource). Error: $_"
         }
     }
 
@@ -213,8 +225,8 @@ function Invoke-Phase1 {
     return @{
         Success = $true
         Data = @{
-            ValidatedSourcePath      = $Config.SourceFolder
-            ValidatedDestinationPath = $Config.DestinationFolder
+            ValidatedSourcePath      = $resolvedSource
+            ValidatedDestinationPath = $resolvedDestination
             PlatformTag              = $ResolvedPlatform
         }
         Reason = $null
