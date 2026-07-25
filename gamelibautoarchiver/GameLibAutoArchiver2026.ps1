@@ -159,10 +159,10 @@ function Invoke-Phase1 {
         #"Origin"      = "origin"
     }
     foreach ($platform in $platforms.Keys) {
-        if ($sourceFolder -like "*$platform*") {
-            $ResolvedPlatform = $platforms[$platform]
+        if ($config.sourceFolder -like "*$platform*") {
+            $config.ResolvedPlatform = $platforms[$platform]
         } else {
-            $ResolvedPlatform = "unknown"
+            $config.ResolvedPlatform = "unknown"
         }
     }
  #   return "unknown"  # Default value if no match
@@ -172,14 +172,19 @@ function Invoke-Phase1 {
     $config.destinationFolder = $config.destinationFolder.Trim()   
 
     Write-Host "Phase 1 stub called" 
-   $SrcFolderCount =  Get-ChildItem -Path $sourceFolder -Directory
+   $SrcFolderCount =  Get-ChildItem -Path $config.sourceFolder -Directory
 
 #    $srcFolderCount = $srcFolderCount.Count
 #    write-host "Source folder count is " $srcFolderCount.count
 
     $resolvedSource         = (Resolve-Path -path $Config.sourceFolder -ErrorAction Stop).Path
     $resolvedDestination    = (Resolve-Path -path $Config.destinationFolder -ErrorAction Stop).Path
+    $testFilePath = Join-Path $resolvedDestination "phase1_write_test.tmp"
+    write-host "value of testfilepath is" $testFilePath
+    write-host "value of resolvedSource is" $resolvedSource -ForegroundColor Yellow
+    write-host "value of resolvedDestination is" $resolvedDestination -ForegroundColor Yellow
 
+    
     try {
         if (-not ($resolvedSource) -or -not ($resolvedDestination)) {
             throw "Source folder or destination folder does not exist: $($resolvedSource), $($resolvedDestination)"
@@ -199,15 +204,22 @@ function Invoke-Phase1 {
 #        if ( -not (Out-File -FilePath $Config.DestinationFolder\test.txt ) ) {
 #            throw "Could not create test file in destination folder."
 #        }
-        if (  (Out-File -FilePath $resolvedDestination\test.txt ) ) {
+
+        if ( -not ($testFilePath  && `
+        Out-File -FilePath $testFilePath -ErrorAction Stop && `
+        Remove-Item -Path $testFilePath -ErrorAction Stop )) {
             throw "Could not create test file in destination folder."
         }
-        if ($srcFolderCount -eq 0) {
+
+#        if (  (Out-File -FilePath $resolvedDestination\test.txt ) ) {
+#            throw "Could not create test file in destination folder."
+#        }
+        if ($srcFolderCount.count -eq 0) {
             
             throw "Source folder contains no subfolders to process."
-        }        if (-not (Test-Path -Path $resolvedSource -PathType Container)) {
-            throw "Source folder does not exist or is not a directory: $($resolvedSource)"
-        }
+        }       if (-not (Test-Path -Path $resolvedSource -PathType Container)) {
+                    throw "Source folder does not exist or is not a directory: $($resolvedSource)"
+                }
     }
        catch {
         #$reasonText = "Could not continue for reason: $($Config.SourceFolder). Error: $_"
