@@ -168,8 +168,13 @@ function Invoke-Phase1 {
  #   return "unknown"  # Default value if no match
 #}
 
-    $config.sourceFolder      = $config.sourceFolder.Trim()
-    $config.destinationFolder = $config.destinationFolder.Trim()   
+# if (Test-Path $config.sourceFolder.Trim() -PathType Container) {
+#     $config.sourceFolder      = $config.sourceFolder.Trim()
+# }
+# 
+# if (Test-Path $config.destinationFolder.Trim() -PathType Container) {
+#     $config.destinationFolder = $config.destinationFolder.Trim()
+# }       
 
     Write-Host "Phase 1 stub called" 
    $SrcFolderCount =  Get-ChildItem -Path $config.sourceFolder -Directory
@@ -177,15 +182,30 @@ function Invoke-Phase1 {
 #    $srcFolderCount = $srcFolderCount.Count
 #    write-host "Source folder count is " $srcFolderCount.count
 
-    $resolvedSource         = (Resolve-Path -path $Config.sourceFolder -ErrorAction Stop).Path
-    $resolvedDestination    = (Resolve-Path -path $Config.destinationFolder -ErrorAction Stop).Path
-    $testFilePath = Join-Path $resolvedDestination "phase1_write_test.tmp"
-    write-host "value of testfilepath is" $testFilePath
-    write-host "value of resolvedSource is" $resolvedSource -ForegroundColor Yellow
-    write-host "value of resolvedDestination is" $resolvedDestination -ForegroundColor Yellow
+#    $resolvedSource         = (Resolve-Path -path $Config.sourceFolder -ErrorAction Stop).Path
+#    $resolvedDestination    = (Resolve-Path -path $Config.destinationFolder -ErrorAction Stop).Path
+#    $testFilePath = Join-Path $resolvedDestination "phase1_write_test.tmp"
+#    write-host "value of testfilepath is" $testFilePath
+#    write-host "value of resolvedSource is" $resolvedSource -ForegroundColor Yellow
+#    write-host "value of resolvedDestination is" $resolvedDestination -ForegroundColor Yellow
 
     
     try {
+        $config.sourceFolder = $config.sourceFolder.Trim()
+        $config.destinationFolder = $config.destinationFolder.Trim()
+
+        if ([string]::IsNullOrWhiteSpace($config.sourceFolder)) {
+            throw "No source folder specified."
+        }
+
+        if ([string]::IsNullOrWhiteSpace($config.destinationFolder)) {
+            throw "No destination folder specified."
+        }
+
+        $resolvedSource = (Resolve-Path -Path $config.sourceFolder -ErrorAction Stop).Path
+        $resolvedDestination = (Resolve-Path -Path $config.destinationFolder -ErrorAction Stop).Path
+        
+
         if (-not ($resolvedSource) -or -not ($resolvedDestination)) {
             throw "Source folder or destination folder does not exist: $($resolvedSource), $($resolvedDestination)"
         }
